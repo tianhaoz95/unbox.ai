@@ -56,11 +56,11 @@ minimind is a monolithic script collection — `train_pretrain.py` hardcodes the
 
 **Resolution**: extract a `Trainer` class (or plain function) in `platform/train/` that takes `model`, `optimizer`, `dataloader`, `config` as arguments.
 
-### DDP Only — No FSDP
+### DDP Only — No 3D Parallelism
 
-minimind uses `DistributedDataParallel` which requires the full model to fit in each GPU's memory. At small scale this is fine, but our platform targets models where FSDP (ZeRO-3 equivalent) is necessary. Starting with DDP for the MVP is acceptable, but the abstraction layer should be designed so swapping to FSDP doesn't require rewriting the training loop.
+minimind uses `DistributedDataParallel` which requires the full model to fit in each GPU's memory and provides no tensor or pipeline parallelism. Our platform targets industry-scale training (30B+ models) which requires all three parallelism axes composed together. Starting with DDP for the MVP is acceptable, but the abstraction must be designed so TP and PP are additive rather than architectural rewrites later.
 
-**Resolution**: wrap model parallelism behind a `setup_model(model, strategy='ddp'|'fsdp')` utility from day one.
+**Resolution**: wrap model parallelism behind a `setup_model(model, parallel_config)` utility from day one, even if `parallel_config` only supports DDP in the MVP. The interface should anticipate TP rank groups and PP stages.
 
 ### Hardcoded Hyperparameters in Scripts
 

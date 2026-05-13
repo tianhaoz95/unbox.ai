@@ -15,7 +15,7 @@ platform/      # Stable, fully functional system — the "parts bin"
   model/       # Model architectures (Transformer variants, attention mechanisms, positional encodings)
   data/        # Data pipeline (curation, tokenization, dataset loading, batching, packing)
   tokenizer/   # Tokenizer training (BPE, SentencePiece) — produces reusable tokenizer artifacts
-  train/       # Pre-training and distributed training (FSDP/DDP, mixed precision)
+  train/       # Pre-training and distributed training (3D parallelism, mixed precision)
   sft/         # Supervised fine-tuning: data formatting, loss masking, training loop
   rl/          # RL post-training: PPO, DPO, GRPO, reward modeling
   distill/     # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
@@ -59,14 +59,18 @@ Components that are correct but domain-specific (e.g., useful only for diffusion
 
 ## Parallelism Strategy
 
-| Strategy | Where used | Implementation target |
-|---|---|---|
-| Data Parallel (DDP/FSDP) | Pre-training, SFT | `torch.distributed` + FSDP2 |
-| Tensor Parallel | Large model experiments | Manual column/row-split linear layers |
-| Pipeline Parallel | Optional for very deep models | Simple 1F1B schedule |
-| Sequence Parallel | Long-context training | Ring attention or Ulysses |
+The platform targets **3D parallelism** as used in industry for models at the 30B+ scale. All three axes must be composable from the start — retrofitting TP or PP into a data-parallel-only design requires rewriting the training loop.
 
-Parallel strategies are composable. The default for most experiments is FSDP (ZeRO-3 equivalent) only.
+| Strategy | Purpose | Implementation target |
+|---|---|---|
+| Data Parallel (ZeRO) | Shard optimizer state, gradients, parameters across DP ranks | DeepSpeed ZeRO or FSDP2 (TBD) |
+| Tensor Parallel (TP) | Split individual layers (attention heads, FFN columns) across GPUs within a node | Megatron-LM-style column/row linear splits |
+| Pipeline Parallel (PP) | Partition layers across nodes; overlap compute and communication | 1F1B schedule |
+| Sequence Parallel | Distribute sequence dimension for long-context training | Ring attention or Ulysses |
+
+The MVP uses DDP for simplicity. The parallelism abstraction (`setup_model(model, parallel_config)`) must be designed so TP and PP are additive, not architectural rewrites.
+
+Specific framework choices (DeepSpeed vs. FSDP, standalone Megatron vs. Megatron-Core as a library) are TBD after the MVP is validated.
 
 ## Inference Infrastructure
 
