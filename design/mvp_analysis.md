@@ -62,6 +62,8 @@ minimind uses `DistributedDataParallel` which requires the full model to fit in 
 
 **Resolution**: wrap model parallelism behind a `setup_model(model, parallel_config)` utility from day one, even if `parallel_config` only supports DDP in the MVP. The interface should anticipate TP rank groups and PP stages.
 
+The post-MVP training framework is planned to be **PyTorch + Megatron-Core** (`megatron-core` on PyPI), which provides TP, PP, SP, and a built-in distributed optimizer without requiring a full Megatron-LM repo clone or DeepSpeed. The MVP parallelism abstraction should be designed with this target in mind.
+
 ### Hardcoded Hyperparameters in Scripts
 
 minimind puts hyperparameters (`batch_size=32`, `lr=5e-4`, `max_seq_len=340`) as argparse defaults directly in `train_pretrain.py`. This makes systematic hyperparameter sweeps awkward.
