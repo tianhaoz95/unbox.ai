@@ -70,7 +70,7 @@ The platform targets **3D parallelism** as used in industry for models at the 30
 
 The MVP uses DDP for simplicity. The parallelism abstraction (`setup_model(model, parallel_config)`) must be designed so TP and PP are additive, not architectural rewrites.
 
-**Likely post-MVP framework stack: PyTorch + Megatron-Core.** `megatron-core` (PyPI) is a standalone library extracted from Megatron-LM that provides TP, PP, SP, and a built-in distributed optimizer (ZeRO-2/3 equivalent) — no full repo clone, no DeepSpeed dependency. This keeps the dependency tree shallow while covering everything needed up to 30B+ scale. Confirm after MVP validation.
+**Framework stack: PyTorch + Megatron-Core.** `megatron-core` (PyPI) is a standalone library extracted from Megatron-LM that provides TP, PP, SP, and a built-in distributed optimizer (ZeRO-2/3 equivalent) — no full repo clone, no DeepSpeed dependency. This keeps the dependency tree shallow while covering everything needed up to 30B+ scale. Using it from the MVP ensures the parallelism abstraction is designed correctly from the start.
 
 ## Inference Infrastructure
 
