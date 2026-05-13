@@ -18,6 +18,7 @@ platform/      # Stable, fully functional system — the "parts bin"
   train/       # Pre-training and distributed training (FSDP/DDP, mixed precision)
   sft/         # Supervised fine-tuning: data formatting, loss masking, training loop
   rl/          # RL post-training: PPO, DPO, GRPO, reward modeling
+  distill/     # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
   infer/       # Inference server (continuous batching, KV cache management, sampling)
   eval/        # Evaluation: perplexity, benchmark harness, model comparison
   utils/       # Logging, config, profiling
