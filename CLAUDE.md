@@ -11,44 +11,46 @@ unbox.ai is a lightweight LLM research and experimentation platform. The guiding
 The repository has two top-level directories with distinct roles:
 
 ```
-platform/      # Stable, fully functional system — the "parts bin"
-  model/       # Model architectures (Transformer variants, attention mechanisms, positional encodings)
-  data/        # Data pipeline (curation, tokenization, dataset loading, batching, packing)
-  tokenizer/   # Tokenizer training (BPE, SentencePiece) — produces reusable tokenizer artifacts
-  train/       # Pre-training and distributed training (3D parallelism, mixed precision)
-  sft/         # Supervised fine-tuning: data formatting, loss masking, training loop
-  rl/          # RL post-training: PPO, DPO, GRPO, reward modeling
-  distill/     # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
-  infer/       # Inference server (continuous batching, KV cache management, sampling)
-  eval/        # Evaluation: perplexity, benchmark harness, model comparison
-  utils/       # Logging, config, profiling
+unbox_platform/   # Stable, fully functional system — the "parts bin"
+  model/          # Model architectures (Transformer variants, attention mechanisms, positional encodings)
+  data/           # Data pipeline (curation, tokenization, dataset loading, batching, packing)
+  tokenizer/      # Tokenizer training (BPE, SentencePiece) — produces reusable tokenizer artifacts
+  train/          # Pre-training and distributed training (3D parallelism, mixed precision)
+  sft/            # Supervised fine-tuning: data formatting, loss masking, training loop
+  rl/             # RL post-training: PPO, DPO, GRPO, reward modeling
+  distill/        # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
+  infer/          # Inference server (continuous batching, KV cache management, sampling)
+  eval/           # Evaluation: perplexity, benchmark harness, model comparison
+  utils/          # Logging, config, profiling
 
-unbox/         # Live research lab — experiments with unknown or non-universal outcomes
+unbox/            # Live research lab — experiments with unknown or non-universal outcomes
   <paper_or_topic>/   # Each experiment is self-contained
 ```
 
-**`/platform`** is a fully functional system comparable to Megatron-LM or SGLang in scope, but designed as Lego pieces: every subsystem works end-to-end, and every component is individually importable. The primary target is autoregressive language models.
+Note: the package is named `unbox_platform` (not `platform`) to avoid shadowing Python's stdlib `platform` module.
 
-**`/unbox`** is where cutting-edge research lives. An experiment imports primitives from `/platform`, assembles them with minimal boilerplate, and runs. `/unbox` code is not held to the same quality or generality bar as `/platform` — it can be messy, half-validated, or domain-specific (e.g., diffusion LMs). It is expected to stay in `/unbox` permanently if its results are correct but not reusable across the core AR platform.
+**`unbox_platform/`** is a fully functional system comparable to Megatron-LM or SGLang in scope, but designed as Lego pieces: every subsystem works end-to-end, and every component is individually importable. The primary target is autoregressive language models.
 
-### Component Granularity in `/platform`
+**`unbox/`** is where cutting-edge research lives. An experiment imports primitives from `unbox_platform`, assembles them with minimal boilerplate, and runs. `unbox/` code is not held to the same quality or generality bar as `unbox_platform/` — it can be messy, half-validated, or domain-specific (e.g., diffusion LMs). It is expected to stay in `unbox/` permanently if its results are correct but not reusable across the core AR platform.
+
+### Component Granularity in `unbox_platform/`
 
 Components are provided at two levels:
 - **Atoms**: individual ops (`RMSNorm`, `RotaryEmbedding`, `CausalSelfAttention`, `FFNSwiGLU`)
 - **Molecules**: standard compositions (`TransformerBlock`, `LLaMA`, `GPT2`) built from atoms
 
-Molecules serve as reference implementations. The atoms are the real value — an `/unbox` experiment can swap one atom out of a molecule with minimal code.
+Molecules serve as reference implementations. The atoms are the real value — an `unbox/` experiment can swap one atom out of a molecule with minimal code.
 
-### Graduation from `/unbox` to `/platform`
+### Graduation from `unbox/` to `unbox_platform/`
 
 A component graduates when:
 1. It is reusable across multiple AR experiments (not just correct in isolation)
 2. It has been validated with confirmed results
-3. Its presence simplifies future `/unbox` work rather than adding complexity
+3. Its presence simplifies future `unbox/` work rather than adding complexity
 
 Components that are correct but domain-specific (e.g., useful only for diffusion models, not AR) **do not graduate**. The boundary is about generality to the core platform, not quality.
 
-**Complexity audit**: periodically review whether `/platform` primitives are actually being reused across `/unbox` experiments. Primitives that aren't being pulled out are candidates for removal or consolidation.
+**Complexity audit**: periodically review whether `unbox_platform/` primitives are actually being reused across `unbox/` experiments. Primitives that aren't being pulled out are candidates for removal or consolidation.
 
 ## Design Principles
 
@@ -96,8 +98,8 @@ pytest tests/platform/model/test_attention.py -v
 pytest tests/ -k "test_flash_attn" -v
 
 # Lint + type check
-ruff check platform/ unbox/
-mypy platform/ unbox/
+ruff check unbox_platform/ unbox/
+mypy unbox_platform/ unbox/
 ```
 
 ## Running Experiments
@@ -106,26 +108,41 @@ Platform entry points:
 
 ```bash
 # Pre-training
-python -m platform.train.pretrain --config configs/pretrain/gpt2_small.yaml
+python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
 # SFT
-python -m platform.sft.train --config configs/sft/basic.yaml
+python -m unbox_platform.sft.train --config configs/sft/basic.yaml
 
 # RL post-training
-python -m platform.rl.train --config configs/rl/ppo.yaml
+python -m unbox_platform.rl.train --config configs/rl/ppo.yaml
 
 # Distributed launch (torchrun)
-torchrun --nproc_per_node=8 -m platform.train.pretrain --config configs/pretrain/llama_1b.yaml
+torchrun --nproc_per_node=8 -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
 # Inference server
-python -m platform.infer.server --config configs/infer/serve.yaml
+python -m unbox_platform.infer.server --config configs/infer/serve.yaml
+
+# Download FineWeb-Edu sample-10BT
+python -m unbox_platform.data.prepare --output data/fineweb_edu_10bt.jsonl
+
+# Train tokenizer
+python -m unbox_platform.tokenizer.train --data data/fineweb_edu_10bt.jsonl --output checkpoints/tokenizer
+
+# Evaluate perplexity
+python -m unbox_platform.eval.perplexity --checkpoint checkpoints/pretrain/760m/latest.pt \
+    --tokenizer checkpoints/tokenizer --config configs/pretrain/760m.yaml
+
+# Qualitative sampling
+python -m unbox_platform.eval.sample --checkpoint checkpoints/pretrain/760m/latest.pt \
+    --tokenizer checkpoints/tokenizer --config configs/pretrain/760m.yaml \
+    --prompt "The theory of relativity states that"
 ```
 
 `/unbox` experiments have their own entry points and configs colocated within the experiment directory.
 
 ## Testing Conventions
 
-- Unit tests mirror the source tree: `tests/platform/model/` tests `platform/model/`, etc.
+- Unit tests mirror the source tree: `tests/platform/model/` tests `unbox_platform/model/`, etc.
 - Tests that require GPUs are marked `@pytest.mark.gpu` and skipped in CPU-only CI.
 - For distributed tests, use `torch.distributed` with `gloo` backend on CPU to keep them runnable without a multi-GPU machine.
 - Numerical correctness tests compare against a naive reference implementation, not against HuggingFace outputs (avoids version drift).

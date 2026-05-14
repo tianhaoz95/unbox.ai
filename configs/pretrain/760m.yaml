@@ -1,0 +1,45 @@
+model:
+  hidden_size: 1792
+  num_layers: 24
+  num_heads: 16
+  num_kv_heads: 8
+  ffn_intermediate_size: 4864
+  vocab_size: 32768
+  max_seq_len: 2048
+  dropout: 0.0
+  rope_theta: 500000.0
+  rms_norm_eps: 1.0e-6
+  tie_embeddings: true
+
+train:
+  tokenizer_path: checkpoints/tokenizer
+  output_dir: checkpoints/pretrain/760m
+  data_path: data/fineweb_edu_10bt.jsonl
+  batch_size: 4
+  grad_accumulation_steps: 8
+  max_lr: 3.0e-4
+  min_lr_ratio: 0.1
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+  num_epochs: 1
+  warmup_steps: 2000
+  dtype: bfloat16
+  save_every_steps: 1000
+  log_every_steps: 50
+  eval_every_steps: 500
+  max_seq_len: 2048
+
+data:
+  data_path: data/fineweb_edu_10bt.jsonl
+  text_field: text
+  max_seq_len: 2048
+  num_workers: 4
+  eval_fraction: 0.001
+  cache_dir: data/cache
+
+parallel:
+  tensor_parallel_size: 1
+  pipeline_parallel_size: 1
+  use_distributed_optimizer: true
