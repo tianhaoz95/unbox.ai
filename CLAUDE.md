@@ -20,7 +20,7 @@ unbox_platform/   # Stable, fully functional system — the "parts bin"
   rl/             # RL post-training: PPO, DPO, GRPO, reward modeling
   distill/        # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
   infer/          # Inference server (continuous batching, KV cache management, sampling)
-    kernels/      # Inference-specific custom ops (paged attention, fused sampling); stays here unless a kernel proves reusable in training
+    kernels/      # Inference-specific Triton kernels (paged decode attention, fused RMSNorm, RoPE, SwiGLU); stays here unless a kernel proves reusable in training
   eval/           # Evaluation: perplexity, benchmark harness, model comparison
   utils/          # Logging, config, profiling
 
@@ -83,9 +83,23 @@ Target: a simplified vLLM/SGLang-style server.
 - **Sampling**: greedy, top-p, top-k, temperature — no exotic samplers unless research needs it
 - Serve via a minimal FastAPI endpoint; no need for production-grade OpenAI-compatible server
 
+### Kernel language: Triton
+
+All custom kernels are written in **Triton** (not CUDA). Triton is Python-native, readable without GPU architecture expertise, and sufficient for the ~50% throughput target. The performance gap vs. hand-tuned CUDA only appears in the last ~10% of optimization headroom, which is not a goal here.
+
+Do not write CUDA kernels. If a kernel cannot be expressed cleanly in Triton, that is a signal the abstraction is too complex for this codebase.
+
 ### Kernel placement
 
-Custom ops (Triton or CUDA) live in `unbox_platform/infer/kernels/`. Training uses PyTorch's built-in `scaled_dot_product_attention` (which dispatches to Flash Attention) and needs no custom kernels at this throughput target. Inference-specific ops — paged attention with block-table indirection, fused sampling — stay inside `infer/kernels/` because they have no training consumer. If a kernel later proves reusable across training and inference, graduate it to a top-level `unbox_platform/kernels/` package at that point.
+Custom ops live in `unbox_platform/infer/kernels/`. Training uses PyTorch's built-in `scaled_dot_product_attention` (which dispatches to Flash Attention) and needs no custom kernels at this throughput target. Inference-specific ops — paged attention with block-table indirection, fused RMSNorm, fused RoPE, fused SwiGLU — stay inside `infer/kernels/` because they have no training consumer. If a kernel later proves reusable across training and inference, graduate it to a top-level `unbox_platform/kernels/` package at that point.
+
+**Do not reimplement Flash Attention.** `F.scaled_dot_product_attention` already dispatches to it for prefill. The kernel that must be written is paged decode attention — single-token Q attending to a block-table KV cache — which PyTorch's SDPA cannot express.
+
+**Planned kernel roadmap** (in priority order):
+1. Paged decode attention — unblocks continuous batching
+2. Fused RMSNorm — eliminates a memory roundtrip on every norm layer
+3. Fused SwiGLU (silu + elementwise multiply) — simple, meaningful gain in the FFN
+4. Fused RoPE — applies rotation in-place to Q/K before attention
 
 ## Development Setup
 
