@@ -254,6 +254,11 @@ def main() -> None:
         state = load_checkpoint(ckpt_path, model, optimizer, device=device)
         start_step = state["step"]
         start_epoch = state["epoch"]
+        # Skip chunks already consumed before the checkpoint so we don't re-train on them
+        skip_chunks = start_step * train_cfg.grad_accumulation_steps * train_cfg.batch_size
+        train_loader.dataset.skip_chunks = skip_chunks
+        if rank == 0:
+            print(f"Skipping {skip_chunks:,} already-processed chunks (step {start_step})")
 
     train(
         model, optimizer, train_loader, eval_loader,

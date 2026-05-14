@@ -135,11 +135,13 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
         tokenizer: Tokenizer,
         config: DataConfig,
         split: str = "train",
+        skip_chunks: int = 0,
     ) -> None:
         self.tokenizer = tokenizer
         self.config = config
         self.max_seq_len = config.max_seq_len
         self.split = split
+        self.skip_chunks = skip_chunks
 
     def _iter_texts(self) -> Iterator[str]:
         path = Path(self.config.data_path)
@@ -197,6 +199,7 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
 
     def __iter__(self) -> Iterator[dict[str, torch.Tensor]]:
         buffer: list[int] = []
+        skipped = 0
         for text in self._iter_texts():
             ids = self.tokenizer.encode(text, add_special_tokens=False)
             ids = [self.tokenizer.bos_id] + ids + [self.tokenizer.eos_id]
@@ -204,6 +207,9 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
             while len(buffer) >= self.max_seq_len:
                 chunk = buffer[: self.max_seq_len]
                 buffer = buffer[self.max_seq_len :]
+                if skipped < self.skip_chunks:
+                    skipped += 1
+                    continue
                 input_ids = torch.tensor(chunk, dtype=torch.long)
                 labels = input_ids.clone()
                 labels[labels == self.tokenizer.pad_id] = -100
