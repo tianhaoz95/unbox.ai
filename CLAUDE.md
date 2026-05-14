@@ -92,10 +92,10 @@ pip install -e ".[dev]"
 pytest tests/
 
 # Run a single test file
-pytest tests/platform/model/test_attention.py -v
+pytest tests/platform/model/test_model.py -v
 
 # Run tests matching a pattern
-pytest tests/ -k "test_flash_attn" -v
+pytest tests/ -k "test_model_forward" -v
 
 # Lint + type check
 ruff check unbox_platform/ unbox/
