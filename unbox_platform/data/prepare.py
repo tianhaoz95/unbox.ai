@@ -15,8 +15,10 @@ def download_fineweb_edu(
     cache_dir: str = "data/cache",
 ) -> None:
     from datasets import load_dataset
+    from datasets.utils.file_utils import DownloadConfig
 
     print(f"Downloading FineWeb-Edu {subset} ...")
+    dl_config = DownloadConfig(cache_dir=cache_dir, disable_tqdm=False)
     ds = load_dataset(
         "HuggingFaceFW/fineweb-edu",
         name=subset,
@@ -24,6 +26,7 @@ def download_fineweb_edu(
         streaming=True,
         cache_dir=cache_dir,
         trust_remote_code=False,
+        download_config=dl_config,
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

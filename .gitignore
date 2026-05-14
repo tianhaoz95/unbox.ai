@@ -11,6 +11,6 @@ build/
 *.pt
 *.pth
 checkpoints/
-data/
+/data/
 *.log
 .env
