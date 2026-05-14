@@ -54,5 +54,10 @@ class TrainConfig:
     # Sequence length (must match ModelConfig.max_seq_len)
     max_seq_len: int = 2048
 
+    # Logging
+    use_wandb: bool = False
+    wandb_project: str = "unbox-ai"
+    wandb_run_name: str = ""   # empty = wandb auto-generates
+
     def effective_batch_size(self, world_size: int = 1) -> int:
         return self.batch_size * self.grad_accumulation_steps * world_size

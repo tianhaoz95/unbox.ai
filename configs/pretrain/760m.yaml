@@ -30,6 +30,9 @@ train:
   log_every_steps: 50
   eval_every_steps: 500
   max_seq_len: 2048
+  use_wandb: false
+  wandb_project: unbox-ai
+  wandb_run_name: ""
 
 data:
   data_path: data/fineweb_edu_10bt.jsonl

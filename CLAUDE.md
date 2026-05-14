@@ -99,6 +99,9 @@ source .venv/bin/activate
 # Install in editable mode with all dev deps (alternative to uv sync)
 uv pip install -e ".[dev]"
 
+# Optional: install wandb for experiment tracking
+uv pip install -e ".[logging]"
+
 # Run all tests
 pytest tests/
 
@@ -118,7 +121,7 @@ mypy unbox_platform/ unbox/
 Platform entry points:
 
 ```bash
-# Pre-training
+# Pre-training (wandb off by default; set use_wandb: true in the config to enable)
 python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
 # SFT

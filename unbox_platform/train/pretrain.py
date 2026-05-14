@@ -3,10 +3,10 @@ Pretraining entry point.
 
 Usage:
     # Single GPU
-    python -m platform.train.pretrain --config configs/pretrain/760m.yaml
+    python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
     # Multi-GPU with torchrun
-    torchrun --nproc_per_node=8 -m platform.train.pretrain --config configs/pretrain/760m.yaml
+    torchrun --nproc_per_node=8 -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 """
 
 from __future__ import annotations
@@ -51,6 +51,21 @@ def train(
     output_dir = Path(config.output_dir)
     step = start_step
     t0 = time.time()
+
+    wandb_run = None
+    if rank == 0 and config.use_wandb:
+        import wandb
+        wandb_run = wandb.init(
+            project=config.wandb_project,
+            name=config.wandb_run_name or None,
+            config={
+                "total_steps": total_steps,
+                "effective_batch_size": config.effective_batch_size(),
+                "max_lr": config.max_lr,
+                "dtype": config.dtype,
+            },
+            resume="allow",
+        )
 
     for epoch in range(start_epoch, config.num_epochs):
         if hasattr(train_loader.sampler, "set_epoch"):
@@ -114,6 +129,13 @@ def train(
                     f"lr={current_lr:.2e} tokens/s={tokens_per_sec:.0f} "
                     f"elapsed={dt:.1f}s"
                 )
+                if wandb_run is not None:
+                    wandb_run.log({
+                        "train/loss": accum_loss,
+                        "train/lr": current_lr,
+                        "train/tokens_per_sec": tokens_per_sec,
+                        "train/epoch": epoch,
+                    }, step=step)
                 t0 = time.time()
 
             accum_loss = 0.0
@@ -122,6 +144,11 @@ def train(
                 eval_loss = evaluate(model, eval_loader, device, dtype, use_amp)
                 ppl = math.exp(min(eval_loss, 20))
                 print(f"  eval step={step} loss={eval_loss:.4f} perplexity={ppl:.2f}")
+                if wandb_run is not None:
+                    wandb_run.log({
+                        "eval/loss": eval_loss,
+                        "eval/perplexity": ppl,
+                    }, step=step)
 
             if rank == 0 and step % config.save_every_steps == 0:
                 save_checkpoint(
@@ -136,6 +163,8 @@ def train(
     if rank == 0:
         save_checkpoint(output_dir, model, optimizer, step, config.num_epochs, accum_loss)
         print(f"Training complete. Final checkpoint at step {step}.")
+        if wandb_run is not None:
+            wandb_run.finish()
 
 
 @torch.no_grad()

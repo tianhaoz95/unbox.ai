@@ -44,6 +44,15 @@ Requires Python ≥ 3.10. For GPU training, ensure your system has a CUDA-compat
 uv pip install torch --index-url https://download.pytorch.org/whl/cu124
 ```
 
+To enable [Weights & Biases](https://wandb.ai) experiment tracking:
+
+```bash
+uv pip install -e ".[logging]"
+wandb login
+```
+
+Then set `use_wandb: true` in your training config (e.g. `configs/pretrain/760m.yaml`). Metrics logged: `train/loss`, `train/lr`, `train/tokens_per_sec`, `eval/loss`, `eval/perplexity`.
+
 ## MVP: Pretraining a ~760M Parameter Model
 
 ### 1. Download data
