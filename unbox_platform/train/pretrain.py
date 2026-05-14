@@ -45,7 +45,8 @@ def train(
     dtype = getattr(torch, config.dtype) if config.dtype != "float32" else torch.float32
     use_amp = dtype in (torch.bfloat16, torch.float16)
 
-    total_steps = len(train_loader) * config.num_epochs // config.grad_accumulation_steps
+    estimated_chunks = train_loader.dataset.estimate_num_chunks()
+    total_steps = (estimated_chunks // config.batch_size) * config.num_epochs // config.grad_accumulation_steps
     scaler = torch.cuda.amp.GradScaler(enabled=(dtype == torch.float16))
 
     output_dir = Path(config.output_dir)
