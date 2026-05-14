@@ -12,12 +12,12 @@ The repository has two top-level directories with distinct roles:
 
 ```
 unbox_platform/   # Stable, fully functional system — the "parts bin"
-  model/          # Model architectures (Transformer variants, attention mechanisms, positional encodings)
+  model/          # Model architectures + HF-compatible adapter (UnboxForCausalLM / UnboxConfig)
   data/           # Data pipeline (curation, tokenization, dataset loading, batching, packing)
   tokenizer/      # Tokenizer training (BPE, SentencePiece) — produces reusable tokenizer artifacts
   train/          # Pre-training and distributed training (3D parallelism, mixed precision)
-  sft/            # Supervised fine-tuning: data formatting, loss masking, training loop
-  rl/             # RL post-training: PPO, DPO, GRPO, reward modeling
+  sft/            # Supervised fine-tuning via TRL's SFTTrainer; dataset must have a "messages" column
+  rl/             # RL post-training: TRL for offline (DPO, GRPO); OpenRLHF for online PPO
   distill/        # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
   infer/          # Fully-fledged inference engine: disaggregated prefill-decode, NCCL TP, ZMQ IPC
     kernels/      # Inference-specific Triton kernels (paged decode attention, fused RMSNorm, RoPE, SwiGLU); stays here unless a kernel proves reusable in training
@@ -57,8 +57,23 @@ Components that are correct but domain-specific (e.g., useful only for diffusion
 
 - **Minimal abstractions**: prefer flat, explicit code over deep class hierarchies. A researcher should be able to read any file top-to-bottom and understand what it does.
 - **Config-driven**: all experiments are specified via YAML/TOML config files (no argparse spaghetti). Configs are typed with `dataclasses` or Pydantic.
-- **Build on, don't reinvent**: industry-standard frameworks (TBD after high-level design) are first-class dependencies. Use their primitives directly (checkpointing, mixed precision, distributed collectives) rather than reimplementing them. `/platform` code lives above this layer, not below it.
+- **Build on, don't reinvent**: industry-standard frameworks are first-class dependencies. Use their primitives directly rather than reimplementing them. `/platform` code lives above this layer, not below it. See the Framework Stack section for the resolved choices.
 - **Single-file components where possible**: an attention module, a scheduler, a sampler — each should live in one file that can be read and modified independently.
+
+## Framework Stack
+
+Resolved framework choices by subsystem. Do not re-litigate these without a concrete reason.
+
+| Subsystem | Framework | Rationale |
+|---|---|---|
+| Pre-training | PyTorch + Megatron-Core | TP/PP/SP built-in; no full repo clone needed |
+| HF compatibility | `transformers.PreTrainedModel` adapter (`UnboxForCausalLM`) | Lets TRL, PEFT, and eval harnesses consume the model without modifying core model code |
+| SFT | TRL `SFTTrainer` + `SFTConfig` | Industry standard for offline supervised fine-tuning; chat-template application is automatic from a "messages" column |
+| Offline RL (DPO, GRPO) | TRL | Same trainer ecosystem as SFT; offline RL has no running environment so TRL's abstractions are sufficient |
+| Online RL (PPO) | OpenRLHF | TRL's PPO is not production-grade for actor-critic rollout loops; OpenRLHF provides the rollout buffer and reward model integration needed |
+| Inference kernels | Triton | Python-native, readable, sufficient at 50% throughput target; do not use CUDA |
+| Inference IPC | ZMQ | Frontend-worker and KV-transfer communication; no RDMA, no zero-copy |
+| Inference TP | NCCL | Same all-reduce collectives as training TP, applied at serve time |
 
 ## Parallelism Strategy
 

@@ -153,3 +153,46 @@ params:           ~760M
 1. **Pretraining corpus**: FineWeb-Edu `sample-10BT` (~30-40GB, ~10B tokens). Matches the 72hr token budget exactly and requires no multi-TB download.
 2. **Parallelism**: Megatron-Core integrated from day one, even for the single-GPU MVP case. No throwaway DDP code.
 3. **Evaluation bar**: perplexity on a held-out split + qualitative sampling. No downstream benchmarks for MVP.
+
+---
+
+## Post-MVP Design Decisions
+
+These decisions were made after the MVP was validated. They extend the platform toward a full training-and-serving pipeline.
+
+### HuggingFace Compatibility Adapter
+
+The core `Transformer` and `ModelConfig` are kept framework-agnostic. A separate adapter layer (`unbox_platform/model/hf_adapter.py`) wraps them in `PreTrainedModel` / `PretrainedConfig` subclasses (`UnboxForCausalLM`, `UnboxConfig`). This lets TRL, PEFT, and standard HF eval harnesses consume the model without modifying core model code.
+
+Key implementation details:
+- `_tied_weights_keys` uses the `dict[str, str]` format required by transformers 5.x
+- `from_pretrained` is overridden to recompute RoPE buffers after HF's `_fast_init` context (which patches `torch.ones_like` and corrupts the non-persistent `freqs_cis` buffer)
+- `supports_gradient_checkpointing = True`; `TransformerBlock` has an opt-in `gradient_checkpointing` flag that routes through `torch.utils.checkpoint.checkpoint` — required because TRL's `SFTConfig` enables gradient checkpointing by default
+- `from_unbox_checkpoint()` loads a raw pretraining `.pt` file and adds the `model.` prefix to the state dict keys
+
+### SFT: TRL
+
+SFT uses TRL's `SFTTrainer` + `SFTConfig`. The dataset must provide a `"messages"` column (list of `{"role": ..., "content": ...}` dicts); the chat template is applied automatically. `SFTConfig` replaces `TrainingArguments` as the args class — it extends it with `max_length` and `packing` fields.
+
+TRL was chosen because SFT is offline learning (fixed dataset, no environment) and TRL is the industry standard for this. The alternative (custom training loop) was rejected — TRL provides gradient checkpointing, mixed precision, evaluation, and checkpoint saving for free.
+
+### RL: TRL for offline, OpenRLHF for online
+
+| Mode | Framework | Reason |
+|---|---|---|
+| DPO, GRPO | TRL | Offline; same dataset-driven pattern as SFT; TRL's `DPOTrainer` and `GRPOTrainer` are production-grade |
+| PPO (online) | OpenRLHF | Online PPO requires an actor-critic rollout loop and a live reward model; TRL's PPO implementation is not production-grade for this use case |
+
+### Inference Engine: Full Industry-Standard Architecture
+
+The inference engine targets architectural parity with SGLang/vLLM, not performance parity. Up to 50% slower is acceptable.
+
+**Disaggregated prefill-decode**: separate worker pools for each phase, coordinated by a central router. Prefill is compute-bound; decode is memory-bandwidth-bound; separating them allows independent scaling of each pool.
+
+**ZMQ**: all inter-process communication — request routing (frontend → workers) and KV cache transfer (prefill worker → decode worker) — uses ZMQ. No RDMA, no zero-copy; correctness over speed.
+
+**NCCL tensor parallelism**: within each worker pool, GPUs split weight matrices column/row-parallel (same Megatron-style split as training) with NCCL all-reduce after each row-parallel layer.
+
+**Triton kernels**: all custom ops are written in Triton (not CUDA). The key kernel that must be written is paged decode attention — single-token Q attending to a block-table KV cache — which PyTorch's `scaled_dot_product_attention` cannot express. Flash Attention for prefill is already handled by PyTorch SDPA and does not need reimplementing.
+
+**Reference**: mini-sglang (`sgl-project/mini-sglang`) is used as a structural reference for the KV cache design (radix tree with LRU eviction, ~600 lines) and the prefill/decode scheduler split. It is not used as a kernel reference — it outsources attention to FlashInfer.
