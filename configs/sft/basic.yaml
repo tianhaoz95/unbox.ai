@@ -1,0 +1,34 @@
+# SFT configuration — fine-tune on UltraChat 200k
+# Run: python -m unbox_platform.sft.train --config configs/sft/basic.yaml
+
+checkpoint_path: checkpoints/pretrain/760m/latest.pt
+tokenizer_path: checkpoints/tokenizer
+output_dir: checkpoints/sft/basic
+
+dataset_name: HuggingFaceH4/ultrachat_200k
+dataset_split: train_sft
+eval_dataset_split: test_sft
+max_samples: -1
+
+max_seq_len: 2048
+
+num_epochs: 1
+batch_size: 2
+grad_accumulation_steps: 4
+max_lr: 2.0e-5
+min_lr_ratio: 0.1
+warmup_steps: 100
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+grad_clip: 1.0
+dtype: bfloat16
+
+log_every_steps: 10
+eval_every_steps: 200
+save_every_steps: 500
+use_wandb: false
+wandb_project: unbox-ai-sft
+wandb_run_name: ""
+
+packing: false

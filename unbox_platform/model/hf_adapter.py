@@ -95,6 +95,7 @@ class UnboxForCausalLM(PreTrainedModel):
 
     config_class = UnboxConfig
     base_model_prefix = "model"
+    supports_gradient_checkpointing = True
     # transformers 5.x: {alias_key: canonical_key} — lm_head is the alias, embed_tokens is canonical
     _tied_weights_keys = {"model.lm_head.weight": "model.embed_tokens.weight"}
 
@@ -102,6 +103,10 @@ class UnboxForCausalLM(PreTrainedModel):
         super().__init__(config)
         self.model = Transformer(config.to_model_config())
         self.post_init()
+
+    def _set_gradient_checkpointing(self, module, value: bool = False) -> None:
+        if hasattr(module, "gradient_checkpointing"):
+            module.gradient_checkpointing = value
 
     def _recompute_rope_buffers(self) -> None:
         """Recompute freqs_cis outside HF's _fast_init context.

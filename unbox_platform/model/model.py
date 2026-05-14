@@ -135,6 +135,17 @@ class TransformerBlock(nn.Module):
         self.attn = Attention(config)
         self.ffn_norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.ffn = FeedForward(config)
+        self.gradient_checkpointing = False
+
+    def _forward(
+        self,
+        x: torch.Tensor,
+        freqs_cis: torch.Tensor,
+        mask: Optional[torch.Tensor],
+    ) -> torch.Tensor:
+        x = x + self.attn(self.attn_norm(x), freqs_cis, mask)
+        x = x + self.ffn(self.ffn_norm(x))
+        return x
 
     def forward(
         self,
@@ -142,9 +153,11 @@ class TransformerBlock(nn.Module):
         freqs_cis: torch.Tensor,
         mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        x = x + self.attn(self.attn_norm(x), freqs_cis, mask)
-        x = x + self.ffn(self.ffn_norm(x))
-        return x
+        if self.gradient_checkpointing and self.training:
+            return torch.utils.checkpoint.checkpoint(
+                self._forward, x, freqs_cis, mask, use_reentrant=False
+            )
+        return self._forward(x, freqs_cis, mask)
 
 
 # ---------------------------------------------------------------------------
