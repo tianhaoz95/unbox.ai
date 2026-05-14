@@ -121,19 +121,19 @@ Token budget at 40% MFU (conservative):
 
 For a research POC verifying coherent generation, 8-10B tokens is sufficient to see clear convergence on a 1B model. Chinchilla-optimal would be 20B tokens, but that is not required to validate the infrastructure.
 
-**Recommended POC size**: **~1B parameters** (e.g., hidden=2048, layers=24, heads=16, GQA kv_heads=8). The 128GB memory gives comfortable headroom for large batch sizes and long sequences without memory pressure.
+**Recommended POC size**: **~760M parameters** (hidden=1792, layers=24, heads=16, GQA kv_heads=8). Sits comfortably in the 600-800M target range, close to Llama-1 760M for easy comparison, and well within memory and token budget.
 
 ### Config Target
 
 ```
-hidden_size:      2048
+hidden_size:      1792
 num_layers:       24
 num_heads:        16
 num_kv_heads:     8       # GQA 2:1 ratio
-ffn_intermediate: ~5632   # ceil(2048 * π / 64) * 64
+ffn_intermediate: ~4864   # ceil(1792 * π / 64) * 64
 vocab_size:       32768
 max_seq_len:      2048
-params:           ~1B
+params:           ~760M
 ```
 
 ---
