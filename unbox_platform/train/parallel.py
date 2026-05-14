@@ -27,6 +27,9 @@ if TYPE_CHECKING:
 def init_distributed() -> tuple[int, int]:
     """Initialize torch.distributed. Returns (rank, world_size)."""
     if torch.distributed.is_available() and not torch.distributed.is_initialized():
+        if "RANK" not in os.environ:
+            # Not launched via torchrun — single-process run, skip distributed init
+            return 0, 1
         backend = "nccl" if torch.cuda.is_available() else "gloo"
         torch.distributed.init_process_group(backend=backend)
 
@@ -42,6 +45,9 @@ def init_distributed() -> tuple[int, int]:
 
 def setup_megatron(config: ParallelConfig, rank: int, world_size: int) -> None:
     """Initialize Megatron-Core parallel state."""
+    if not torch.distributed.is_initialized():
+        # Single-process run — skip Megatron parallel state init
+        return
     try:
         from megatron.core import parallel_state
 
