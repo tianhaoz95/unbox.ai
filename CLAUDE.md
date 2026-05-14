@@ -20,6 +20,7 @@ unbox_platform/   # Stable, fully functional system — the "parts bin"
   rl/             # RL post-training: PPO, DPO, GRPO, reward modeling
   distill/        # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
   infer/          # Inference server (continuous batching, KV cache management, sampling)
+    kernels/      # Inference-specific custom ops (paged attention, fused sampling); stays here unless a kernel proves reusable in training
   eval/           # Evaluation: perplexity, benchmark harness, model comparison
   utils/          # Logging, config, profiling
 
@@ -81,6 +82,10 @@ Target: a simplified vLLM/SGLang-style server.
 - **Continuous batching**: scheduler that fills a batch with waiting + running sequences each step
 - **Sampling**: greedy, top-p, top-k, temperature — no exotic samplers unless research needs it
 - Serve via a minimal FastAPI endpoint; no need for production-grade OpenAI-compatible server
+
+### Kernel placement
+
+Custom ops (Triton or CUDA) live in `unbox_platform/infer/kernels/`. Training uses PyTorch's built-in `scaled_dot_product_attention` (which dispatches to Flash Attention) and needs no custom kernels at this throughput target. Inference-specific ops — paged attention with block-table indirection, fused sampling — stay inside `infer/kernels/` because they have no training consumer. If a kernel later proves reusable across training and inference, graduate it to a top-level `unbox_platform/kernels/` package at that point.
 
 ## Development Setup
 
