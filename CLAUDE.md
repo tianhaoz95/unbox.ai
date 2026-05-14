@@ -84,9 +84,20 @@ Target: a simplified vLLM/SGLang-style server.
 
 ## Development Setup
 
+We use [uv](https://docs.astral.sh/uv/) for environment management.
+
 ```bash
-# Install in editable mode with all dev deps
-pip install -e ".[dev]"
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install all deps including dev
+uv sync --extra dev
+
+# Activate the environment
+source .venv/bin/activate
+
+# Install in editable mode with all dev deps (alternative to uv sync)
+uv pip install -e ".[dev]"
 
 # Run all tests
 pytest tests/

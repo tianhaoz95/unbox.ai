@@ -25,11 +25,24 @@ design/           # Architecture and design documents
 
 ## Setup
 
+We use [uv](https://docs.astral.sh/uv/) for environment management.
+
 ```bash
-pip install -e ".[dev]"
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install all dependencies
+uv sync --extra dev
+
+# Activate
+source .venv/bin/activate
 ```
 
-Requires Python ≥ 3.10 and PyTorch ≥ 2.3. For GPU training, install PyTorch with CUDA support before running the above.
+Requires Python ≥ 3.10. For GPU training, ensure your system has a CUDA-compatible PyTorch installed — `uv sync` will pull the CPU build by default; override with:
+
+```bash
+uv pip install torch --index-url https://download.pytorch.org/whl/cu124
+```
 
 ## MVP: Pretraining a ~760M Parameter Model
 
