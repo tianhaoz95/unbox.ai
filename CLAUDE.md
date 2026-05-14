@@ -19,7 +19,7 @@ unbox_platform/   # Stable, fully functional system — the "parts bin"
   sft/            # Supervised fine-tuning: data formatting, loss masking, training loop
   rl/             # RL post-training: PPO, DPO, GRPO, reward modeling
   distill/        # Knowledge distillation: logit matching, hidden state distillation, reasoning transfer
-  infer/          # Inference server (continuous batching, KV cache management, sampling)
+  infer/          # Fully-fledged inference engine: disaggregated prefill-decode, NCCL TP, ZMQ IPC
     kernels/      # Inference-specific Triton kernels (paged decode attention, fused RMSNorm, RoPE, SwiGLU); stays here unless a kernel proves reusable in training
   eval/           # Evaluation: perplexity, benchmark harness, model comparison
   utils/          # Logging, config, profiling
@@ -77,11 +77,60 @@ The MVP uses DDP for simplicity. The parallelism abstraction (`setup_model(model
 
 ## Inference Infrastructure
 
-Target: a simplified vLLM/SGLang-style server.
-- **PagedAttention**-style KV cache (blocks of fixed size, free-list allocator)
-- **Continuous batching**: scheduler that fills a batch with waiting + running sequences each step
-- **Sampling**: greedy, top-p, top-k, temperature — no exotic samplers unless research needs it
-- Serve via a minimal FastAPI endpoint; no need for production-grade OpenAI-compatible server
+Target: a **fully-fledged industry-standard inference engine**, comparable to SGLang or vLLM in architectural scope. Performance is explicitly not a goal — up to 50% slower than production systems is acceptable. Every major subsystem that exists in production engines must exist here, implemented readably rather than optimally.
+
+### Architecture: disaggregated prefill-decode
+
+The engine uses **prefill-decode disaggregation**: separate worker pools handle the two phases, coordinated by a central router. This reflects how production systems are deployed at scale (prefill is compute-bound, decode is memory-bandwidth-bound; mixing them on the same GPU is suboptimal).
+
+```
+HTTP client
+    │
+    ▼
+FastAPI frontend  (unbox_platform/infer/server.py)
+    │  ZMQ PUSH/PULL
+    ▼
+Router / dispatcher  (unbox_platform/infer/router.py)
+    │                       │
+    ▼                       ▼
+Prefill workers         Decode workers
+(one or more GPUs)      (one or more GPUs)
+    │  KV cache transfer (ZMQ)
+    └──────────────────────▶│
+                            ▼
+                    Token stream back to router → client
+```
+
+Each worker is a separate Python process. Workers within a pool use **NCCL** for tensor parallelism (splitting attention heads and FFN columns across GPUs). The frontend and workers communicate exclusively via **ZMQ** (push/pull for requests, pub/sub for results).
+
+### Component map
+
+```
+unbox_platform/infer/
+  kernels/        # Triton kernels (see below)
+  kvcache.py      # Paged KV cache: block allocator, radix-tree prefix cache, LRU eviction
+  scheduler.py    # Per-worker scheduler: continuous batching, chunked prefill, decode batching
+  engine.py       # Single-worker forward pass: loads model, runs attention + FFN, samples
+  worker.py       # Worker process entry point: prefill worker or decode worker
+  router.py       # Dispatcher: accepts requests, routes to prefill pool, tracks KV transfer, streams tokens
+  server.py       # FastAPI HTTP layer: POST /generate, POST /v1/chat/completions (OpenAI-compatible)
+  distributed.py  # NCCL tensor-parallel setup for multi-GPU workers
+  messaging.py    # ZMQ socket abstractions (request envelope, KV transfer, result streaming)
+  config.py       # InferConfig dataclass: worker counts, TP degree, block size, etc.
+  sampling.py     # Greedy, top-k, top-p, temperature sampling
+```
+
+### Key subsystem details
+
+**KV cache** — paged/blocked layout (fixed-size blocks, free-list allocator) with a radix tree for prefix caching and LRU eviction. The block table is the interface between the scheduler and the paged decode attention kernel.
+
+**Scheduler** — each worker runs its own scheduler loop: prefill workers chunk long prompts and fill a compute budget per step; decode workers batch all in-flight sequences together. The router coordinates phase handoff.
+
+**KV transfer** — after a prefill worker finishes a request, it serialises the KV blocks and sends them to an assigned decode worker via ZMQ. This is the disaggregation boundary. Simplicity over speed: no RDMA, no zero-copy, just ZMQ byte transfer.
+
+**Tensor parallelism** — within a worker pool, each GPU rank holds a shard of the weight matrices (column-parallel for Q/K/V/gate projections, row-parallel for output projections). NCCL all-reduce after each row-parallel layer. Same Megatron-style split as training TP, but applied at inference time.
+
+**Server** — FastAPI with OpenAI-compatible endpoints (`/v1/chat/completions`, `/v1/models`). Streaming via SSE. Frontend is async; model work is in worker processes.
 
 ### Kernel language: Triton
 
