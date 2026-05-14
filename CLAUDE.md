@@ -84,7 +84,9 @@ Target: a simplified vLLM/SGLang-style server.
 
 ## Development Setup
 
-We use [uv](https://docs.astral.sh/uv/) for environment management.
+We use [uv](https://docs.astral.sh/uv/) for environment management. The virtual environment lives at `.venv/` in the repo root.
+
+**All commands must use the `.venv` binaries directly — never the system Python or any globally installed tools.** Prefix every `python`, `pytest`, `ruff`, `mypy`, and `torchrun` invocation with `.venv/bin/` (or activate first). This ensures the correct package versions are used and avoids contaminating or depending on the system environment.
 
 ```bash
 # Install uv (if not already installed)
@@ -93,7 +95,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Create virtual environment and install all deps including dev
 uv sync --extra dev
 
-# Activate the environment
+# Activate the environment (optional — activating means you can omit .venv/bin/ prefixes)
 source .venv/bin/activate
 
 # Install in editable mode with all dev deps (alternative to uv sync)
@@ -102,52 +104,52 @@ uv pip install -e ".[dev]"
 # Optional: install wandb for experiment tracking
 uv pip install -e ".[logging]"
 
-# Run all tests
-pytest tests/
+# Run all tests (use venv pytest)
+.venv/bin/pytest tests/
 
 # Run a single test file
-pytest tests/platform/model/test_model.py -v
+.venv/bin/pytest tests/platform/model/test_model.py -v
 
 # Run tests matching a pattern
-pytest tests/ -k "test_model_forward" -v
+.venv/bin/pytest tests/ -k "test_model_forward" -v
 
-# Lint + type check
-ruff check unbox_platform/ unbox/
-mypy unbox_platform/ unbox/
+# Lint + type check (use venv ruff/mypy)
+.venv/bin/ruff check unbox_platform/ unbox/
+.venv/bin/mypy unbox_platform/ unbox/
 ```
 
 ## Running Experiments
 
-Platform entry points:
+Platform entry points — always use `.venv/bin/python` and `.venv/bin/torchrun`:
 
 ```bash
 # Pre-training (wandb off by default; set use_wandb: true in the config to enable)
-python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
+.venv/bin/python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
 # SFT
-python -m unbox_platform.sft.train --config configs/sft/basic.yaml
+.venv/bin/python -m unbox_platform.sft.train --config configs/sft/basic.yaml
 
 # RL post-training
-python -m unbox_platform.rl.train --config configs/rl/ppo.yaml
+.venv/bin/python -m unbox_platform.rl.train --config configs/rl/ppo.yaml
 
 # Distributed launch (torchrun)
-torchrun --nproc_per_node=8 -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
+.venv/bin/torchrun --nproc_per_node=8 -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
 # Inference server
-python -m unbox_platform.infer.server --config configs/infer/serve.yaml
+.venv/bin/python -m unbox_platform.infer.server --config configs/infer/serve.yaml
 
 # Download FineWeb-Edu sample-10BT
-python -m unbox_platform.data.prepare --output data/fineweb_edu_10bt.jsonl
+.venv/bin/python -m unbox_platform.data.prepare --output data/fineweb_edu_10bt.jsonl
 
 # Train tokenizer
-python -m unbox_platform.tokenizer.train --data data/fineweb_edu_10bt.jsonl --output checkpoints/tokenizer
+.venv/bin/python -m unbox_platform.tokenizer.train --data data/fineweb_edu_10bt.jsonl --output checkpoints/tokenizer
 
 # Evaluate perplexity
-python -m unbox_platform.eval.perplexity --checkpoint checkpoints/pretrain/760m/latest.pt \
+.venv/bin/python -m unbox_platform.eval.perplexity --checkpoint checkpoints/pretrain/760m/latest.pt \
     --tokenizer checkpoints/tokenizer --config configs/pretrain/760m.yaml
 
 # Qualitative sampling
-python -m unbox_platform.eval.sample --checkpoint checkpoints/pretrain/760m/latest.pt \
+.venv/bin/python -m unbox_platform.eval.sample --checkpoint checkpoints/pretrain/760m/latest.pt \
     --tokenizer checkpoints/tokenizer --config configs/pretrain/760m.yaml \
     --prompt "The theory of relativity states that"
 ```
