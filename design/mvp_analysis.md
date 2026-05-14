@@ -106,25 +106,34 @@ The POC acceptance criterion is: **a pretrained model that generates grammatical
 
 ### Target Model Size for 72hr DGX Spark Budget
 
-DGX Spark (GB10 Grace Blackwell) provides ~1000 TOPS with 128GB unified memory. For a rough estimate:
+DGX Spark (GB10 Grace Blackwell): 128GB unified memory, ~500 TFLOPS BF16 sustained.
 
-- minimind 26M param model trains in ~8hrs on a single RTX 3090 (35 TFLOPS) on the full 10GB dataset
-- DGX Spark is approximately 10-15x faster for this workload → same model trains in ~30-45 minutes
-- 72hr budget → can scale to a **~360M–1B parameter model** on a comparable dataset
+Memory breakdown for a 1B param model in BF16 + FP32 AdamW:
+- Parameters (BF16): 2GB
+- Optimizer states (FP32 master weights + 2 moments): 12GB
+- Gradients (FP32): 4GB
+- **Total before activations: ~18GB** — leaves ~110GB headroom for activations and large batch sizes
 
-**Recommended POC size**: **~360M parameters** (e.g., hidden=1024, layers=24, heads=16, GQA kv_heads=8). This is large enough to produce clearly coherent text and stress-test the training infrastructure, but trains comfortably within the 72hr window with room to spare for debugging and iteration.
+Token budget at 40% MFU (conservative):
+- Effective throughput: ~200 TFLOPS
+- ~33,000 tokens/sec for a 1B param model
+- **72hr total: ~8.6B tokens**
+
+For a research POC verifying coherent generation, 8-10B tokens is sufficient to see clear convergence on a 1B model. Chinchilla-optimal would be 20B tokens, but that is not required to validate the infrastructure.
+
+**Recommended POC size**: **~1B parameters** (e.g., hidden=2048, layers=24, heads=16, GQA kv_heads=8). The 128GB memory gives comfortable headroom for large batch sizes and long sequences without memory pressure.
 
 ### Config Target
 
 ```
-hidden_size:     1024
-num_layers:      24
-num_heads:       16
-num_kv_heads:    8      # GQA
-ffn_intermediate: ~2730  # ceil(1024 * π / 64) * 64
-vocab_size:      32768
-max_seq_len:     2048
-params:          ~360M
+hidden_size:      2048
+num_layers:       24
+num_heads:        16
+num_kv_heads:     8       # GQA 2:1 ratio
+ffn_intermediate: ~5632   # ceil(2048 * π / 64) * 64
+vocab_size:       32768
+max_seq_len:      2048
+params:           ~1B
 ```
 
 ---
