@@ -148,8 +148,8 @@ params:           ~760M
 
 ---
 
-## Open Questions Before Implementation
+## Implementation Decisions
 
-1. **Pretraining corpus**: minimind uses a Chinese-English mix dataset. What is our target data source and language distribution?
-2. **Framework decision**: DDP for MVP is fine, but do we want to commit to FSDP as the production strategy now so the abstraction is designed correctly from day one?
-3. **Evaluation bar**: is perplexity on a held-out split sufficient to call the POC verified, or do we want a small downstream benchmark (e.g., BLiMP, HellaSwag subset)?
+1. **Pretraining corpus**: FineWeb-Edu `sample-10BT` (~30-40GB, ~10B tokens). Matches the 72hr token budget exactly and requires no multi-TB download.
+2. **Parallelism**: Megatron-Core integrated from day one, even for the single-GPU MVP case. No throwaway DDP code.
+3. **Evaluation bar**: perplexity on a held-out split + qualitative sampling. No downstream benchmarks for MVP.
