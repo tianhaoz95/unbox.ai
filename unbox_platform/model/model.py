@@ -185,6 +185,19 @@ class Transformer(nn.Module):
 
         self._init_weights()
 
+    def to(self, *args, **kwargs) -> "Transformer":
+        # freqs_cis is complex64 and cannot survive a dtype cast to bfloat16/float16
+        # (PyTorch silently drops the imaginary part with a warning). Remove it before
+        # the cast so super().to() never sees it, then recompute on the correct device.
+        self._buffers.pop("freqs_cis", None)
+        result = super().to(*args, **kwargs)
+        device = next(result.parameters()).device
+        freqs_cis = precompute_freqs_cis(
+            result.config.head_dim, result.config.max_seq_len * 2, result.config.rope_theta
+        )
+        result.register_buffer("freqs_cis", freqs_cis.to(device), persistent=False)
+        return result
+
     def _init_weights(self) -> None:
         for module in self.modules():
             if isinstance(module, nn.Linear):
