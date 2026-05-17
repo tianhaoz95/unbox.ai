@@ -32,7 +32,8 @@ jobs:
         run: |
           pip install \
             mkdocs-material==9.5.* \
-            mkdocs-glightbox
+            mkdocs-glightbox \
+            mkdocs-static-i18n
 
       - name: Build site
         run: mkdocs build --strict

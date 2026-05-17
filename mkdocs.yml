@@ -43,10 +43,43 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/tianhaoz95/unbox.ai
+  alternate:
+    - name: English
+      link: /unbox.ai/
+      lang: en
+    - name: 中文
+      link: /unbox.ai/zh/
+      lang: zh
 
 plugins:
   - search
   - glightbox
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: 中文
+          build: true
+          nav_translations:
+            Home: 主页
+            Curriculum: 课程
+            Overview: 概览
+            "1 · Dataset Selection": "1 · 数据集选择"
+            "2 · Data Cleaning & Preparation": "2 · 数据清洗与预处理"
+            "3 · Tokenizer Training": "3 · 分词器训练"
+            "4 · Model Architecture": "4 · 模型架构"
+            "5 · Pre-training": "5 · 预训练"
+            "6 · Supervised Fine-Tuning": "6 · 监督微调"
+            "7 · Reinforcement Learning": "7 · 强化学习"
+            "8 · Inference Engine": "8 · 推理引擎"
+            Reports: 报告
+            "Step 10,000 Sanity Check": "第 10,000 步健全性检查"
+            "Step 15,000 Sanity Check": "第 15,000 步健全性检查"
+            Experiments: 实验
 
 markdown_extensions:
   - pymdownx.highlight:
