@@ -1,0 +1,90 @@
+site_name: unbox.ai
+site_description: A full-stack LLM research and education platform — from raw text to a deployed inference engine.
+site_url: https://tianhaoz95.github.io/unbox.ai
+repo_url: https://github.com/tianhaoz95/unbox.ai
+repo_name: tianhaoz95/unbox.ai
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/cube-outline
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/tianhaoz95/unbox.ai
+
+plugins:
+  - search
+  - glightbox
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Curriculum:
+    - Overview: curriculum/00_overview.md
+    - "1 · Dataset Selection": curriculum/01_dataset.md
+    - "2 · Data Cleaning & Preparation": curriculum/02_data_cleaning.md
+    - "3 · Tokenizer Training": curriculum/03_tokenizer.md
+    - "4 · Model Architecture": curriculum/04_architecture.md
+    - "5 · Pre-training": curriculum/05_pretraining.md
+    - "6 · Supervised Fine-Tuning": curriculum/06_sft.md
+    - "7 · Reinforcement Learning": curriculum/07_rl.md
+    - "8 · Inference Engine": curriculum/08_inference.md
+  - Reports:
+    - "Step 10,000 Sanity Check": reports/sanity_check_step10000.md
+    - "Step 15,000 Sanity Check": reports/sanity_check_step15000.md
+  - Experiments: experiments.md
