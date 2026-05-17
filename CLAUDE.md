@@ -94,9 +94,30 @@ The MVP uses DDP for simplicity. The parallelism abstraction (`setup_model(model
 
 Target: a **fully-fledged industry-standard inference engine**, comparable to SGLang or vLLM in architectural scope. Performance is explicitly not a goal — up to 50% slower than production systems is acceptable. Every major subsystem that exists in production engines must exist here, implemented readably rather than optimally.
 
+### Serving modes
+
+The engine supports two modes, selected via `InferConfig.mode`:
+
+```python
+mode: Literal["unified", "disaggregated"] = "unified"
+```
+
+**Unified mode** (default) — a single worker pool handles both prefill and decode in the same scheduler loop. The router is trivial (round-robin load balancing). No KV transfer. Right for single-GPU development, small-scale serving, and as the starting point for implementation.
+
+**Disaggregated mode** — separate prefill and decode worker pools, coordinated by a router that tracks KV handoff. Right for multi-node production deployments where prefill (compute-bound) and decode (memory-bandwidth-bound) need independent scaling.
+
+The components that are **identical** in both modes: `config`, `messaging`, `sampling`, `kvcache`, `kernels`, `engine`, `distributed`, `server`. The difference is purely topological — how workers are coordinated, not how they compute.
+
+The components that **branch** on mode:
+- `scheduler.py` — unified runs one loop handling both chunked prefill and decode batching; disaggregated splits these into two specialized schedulers
+- `worker.py` — reads `worker_type: Literal["unified", "prefill", "decode"]` and sets up accordingly
+- `router.py` — disaggregated routes to two pools and tracks KV transfer; unified load-balances one pool and skips KV transfer
+
+Build and validate unified mode end-to-end first, then layer disaggregated on top.
+
 ### Architecture: disaggregated prefill-decode
 
-The engine uses **prefill-decode disaggregation**: separate worker pools handle the two phases, coordinated by a central router. This reflects how production systems are deployed at scale (prefill is compute-bound, decode is memory-bandwidth-bound; mixing them on the same GPU is suboptimal).
+In disaggregated mode, separate worker pools handle the two phases, coordinated by a central router. This reflects how production systems are deployed at scale (prefill is compute-bound, decode is memory-bandwidth-bound; mixing them on the same GPU is suboptimal).
 
 ```
 HTTP client
@@ -133,19 +154,22 @@ unbox_platform/infer/
   messaging.py    # ZMQ socket abstractions (request envelope, KV transfer, result streaming)
   config.py       # InferConfig dataclass: worker counts, TP degree, block size, etc.
   sampling.py     # Greedy, top-k, top-p, temperature sampling
+  tokenizer.py    # Prompt tokenization and incremental streaming detokenization
 ```
 
 ### Key subsystem details
 
 **KV cache** — paged/blocked layout (fixed-size blocks, free-list allocator) with a radix tree for prefix caching and LRU eviction. The block table is the interface between the scheduler and the paged decode attention kernel.
 
-**Scheduler** — each worker runs its own scheduler loop: prefill workers chunk long prompts and fill a compute budget per step; decode workers batch all in-flight sequences together. The router coordinates phase handoff.
+**Scheduler** — in unified mode, one scheduler loop handles both chunked prefill and decode batching on the same worker. In disaggregated mode, prefill workers run a chunked-prefill scheduler (fill a compute budget per step) and decode workers run a decode-batching scheduler (batch all in-flight sequences). The router coordinates phase handoff in disaggregated mode only.
 
 **KV transfer** — after a prefill worker finishes a request, it serialises the KV blocks and sends them to an assigned decode worker via ZMQ. This is the disaggregation boundary. Simplicity over speed: no RDMA, no zero-copy, just ZMQ byte transfer.
 
 **Tensor parallelism** — within a worker pool, each GPU rank holds a shard of the weight matrices (column-parallel for Q/K/V/gate projections, row-parallel for output projections). NCCL all-reduce after each row-parallel layer. Same Megatron-style split as training TP, but applied at inference time.
 
-**Server** — FastAPI with OpenAI-compatible endpoints (`/v1/chat/completions`, `/v1/models`). Streaming via SSE. Frontend is async; model work is in worker processes.
+**Tokenizer / detokenizer** — `tokenizer.py` owns both directions of text↔token conversion and runs in the server process (CPU-bound, no process isolation needed at this throughput target). On the input side it tokenizes the prompt text into token IDs before the request is pushed to the router. On the output side it holds a per-request token ID buffer and handles incremental detokenization: because tokens can represent multi-character or split UTF-8 sequences, individual token IDs cannot be decoded independently. The standard approach is to append each new token ID to the buffer and re-decode the full suffix each step, emitting only the newly confirmed text. The buffer is keyed by request ID and lives alongside the SSE emission loop in the server. The tokenizer wraps `unbox_platform/tokenizer/` (or a HuggingFace `PreTrainedTokenizerFast`) and is loaded once at server startup.
+
+**Server** — FastAPI with OpenAI-compatible endpoints (`/v1/chat/completions`, `/v1/models`). Streaming via SSE. Frontend is async; model work is in worker processes. The server owns the tokenizer instance and the per-request detokenization buffers.
 
 ### Kernel language: Triton
 

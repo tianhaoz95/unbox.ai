@@ -1,0 +1,45 @@
+# Inference server configuration
+# Usage: .venv/bin/python -m unbox_platform.infer.server --config configs/infer/serve.yaml
+
+# paths
+model_path: checkpoints/pretrain/760m/latest.pt
+model_config_path: configs/pretrain/760m.yaml
+tokenizer_path: checkpoints/tokenizer
+
+# serving mode: "unified" (default) or "disaggregated"
+mode: unified
+
+# server
+host: "0.0.0.0"
+port: 8000
+
+# worker topology (unified mode: num_workers; disaggregated: num_prefill/decode_workers)
+num_workers: 1
+num_prefill_workers: 1
+num_decode_workers: 1
+tensor_parallel_size: 1
+
+# ZMQ ports
+router_frontend_port: 5550
+worker_request_port: 5551
+worker_result_port: 5552
+kv_transfer_port: 5553
+
+# KV cache: block_size * max_num_blocks * num_layers * 2 * num_kv_heads * head_dim * dtype_bytes
+# 16 * 4096 * 24 * 2 * 8 * 112 * 2 (bf16) ≈ 3.4 GB
+block_size: 16
+max_num_blocks: 4096
+max_seq_len: 2048
+
+# scheduler
+max_batch_size: 32
+prefill_chunk_size: 512
+
+# default sampling parameters (overridable per request)
+sampling:
+  temperature: 1.0
+  top_k: 50
+  top_p: 0.9
+  max_new_tokens: 512
+
+dtype: bfloat16
