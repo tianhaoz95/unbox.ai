@@ -7,6 +7,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,9 @@ def main() -> None:
     if cfg.max_samples > 0:
         dataset = dataset.select(range(min(cfg.max_samples, len(dataset))))
         eval_dataset = eval_dataset.select(range(min(cfg.max_samples // 10 + 1, len(eval_dataset))))
+
+    if cfg.use_wandb and cfg.wandb_project:
+        os.environ["WANDB_PROJECT"] = cfg.wandb_project
 
     # SFTConfig extends TrainingArguments with SFT-specific params (max_length, packing, etc.)
     training_args = SFTConfig(
