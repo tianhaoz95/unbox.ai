@@ -67,6 +67,11 @@ def main() -> None:
         dataset = dataset.select(range(min(cfg.max_samples, len(dataset))))
         eval_dataset = eval_dataset.select(range(min(cfg.max_samples // 10 + 1, len(eval_dataset))))
 
+    # Keep only the "messages" column so TRL uses the chat-template path rather
+    # than the prompt+completion path (triggered when a "prompt" column is present).
+    dataset = dataset.select_columns(["messages"])
+    eval_dataset = eval_dataset.select_columns(["messages"])
+
     if cfg.use_wandb and cfg.wandb_project:
         os.environ["WANDB_PROJECT"] = cfg.wandb_project
 
