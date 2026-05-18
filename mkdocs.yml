@@ -120,4 +120,5 @@ nav:
   - Reports:
     - "Step 10,000 Sanity Check": reports/sanity_check_step10000.md
     - "Step 15,000 Sanity Check": reports/sanity_check_step15000.md
+    - "SFT User Token Masking Bug": reports/sft_user_token_masking_bug.md
   - Experiments: experiments.md
