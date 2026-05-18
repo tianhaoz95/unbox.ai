@@ -103,6 +103,10 @@ def main() -> None:
         # SFT-specific
         max_length=cfg.max_seq_len,
         packing=cfg.packing,
+        # Mask user turns so loss is computed only on assistant response tokens.
+        # Without this, TRL defaults to False for "messages"-only datasets, causing
+        # the model to learn to predict user turns and generate fake user messages.
+        completion_only_loss=True,
     )
 
     trainer = SFTTrainer(
