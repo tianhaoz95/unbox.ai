@@ -15,8 +15,9 @@ This document covers framework choices, the three-method progression, implementa
 | DPO | TRL `DPOTrainer` + `DPOConfig` | Same trainer ecosystem as SFT; no rollout infrastructure needed |
 | GRPO | TRL `GRPOTrainer` + `GRPOConfig` | Offline group-relative scoring; reward function replaces reward model |
 | PPO (online) | OpenRLHF | TRL's PPO is not production-grade for actor-critic rollout loops; OpenRLHF provides the distributed rollout buffer, reward model serving, and reference model KL penalty needed for stable training |
+| RLVR (custom) | mini-sglang rollout + Megatron-Core training | Disaggregated rollout and training for verifiable-reward tasks; see `design/rlvr.md` |
 
-TRL is used for all offline methods (DPO, GRPO) because it shares the same trainer ecosystem as SFT and requires no running environment. OpenRLHF is used for online PPO specifically because it provides the actor-critic infrastructure that TRL lacks.
+TRL is used for all offline methods (DPO, GRPO) because it shares the same trainer ecosystem as SFT and requires no running environment. OpenRLHF is used for online PPO. The custom RLVR path (see `design/rlvr.md`) targets verifiable-reward tasks (math, code) with a disaggregated rollout engine and Megatron-Core training, giving full-stack visibility into how production RLVR systems work.
 
 ---
 

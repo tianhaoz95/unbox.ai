@@ -71,6 +71,8 @@ Resolved framework choices by subsystem. Do not re-litigate these without a conc
 | SFT | TRL `SFTTrainer` + `SFTConfig` | Industry standard for offline supervised fine-tuning; chat-template application is automatic from a "messages" column |
 | Offline RL (DPO, GRPO) | TRL | See `design/rl_posttraining.md` |
 | Online RL (PPO) | OpenRLHF | See `design/rl_posttraining.md` |
+| RLVR (verifiable rewards) | mini-sglang rollout + Megatron-Core | See `design/rlvr.md` |
+| Distillation | TRL `GKDTrainer` | See `design/distillation.md` |
 | Inference kernels | Triton | Python-native, readable, sufficient at 50% throughput target; do not use CUDA |
 | Inference IPC | ZMQ | Frontend-worker and KV-transfer communication; no RDMA, no zero-copy |
 | Inference TP | NCCL | Same all-reduce collectives as training TP, applied at serve time |
