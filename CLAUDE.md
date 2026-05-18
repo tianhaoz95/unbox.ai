@@ -272,6 +272,49 @@ Platform entry points — always use `.venv/bin/python` and `.venv/bin/torchrun`
 - For distributed tests, use `torch.distributed` with `gloo` backend on CPU to keep them runnable without a multi-GPU machine.
 - Numerical correctness tests compare against a naive reference implementation, not against HuggingFace outputs (avoids version drift).
 
+## ModelScope Checkpoint Upload and Download
+
+Checkpoints are published to ModelScope for cross-machine resume and sharing.
+ModelScope is installed in the venv: `.venv/bin/modelscope`.
+
+**Published models:**
+- `tianhaoz95/unbox-760m-base` — pretrain checkpoint (`latest.pt`, native format)
+- `tianhaoz95/unbox-760m-sft` — SFT checkpoint (HF format, step 3000)
+
+**Upload a checkpoint:**
+```bash
+# Upload a single file (e.g. pretrain latest.pt)
+.venv/bin/modelscope upload tianhaoz95/unbox-760m-base \
+    checkpoints/pretrain/760m/latest.pt latest.pt \
+    --commit-message "description"
+
+# Upload an entire directory (e.g. HF-format SFT checkpoint)
+.venv/bin/modelscope upload tianhaoz95/unbox-760m-sft \
+    checkpoints/sft/basic/checkpoint-3000 . \
+    --commit-message "description"
+```
+
+The `upload` command creates the repo automatically if it does not exist.
+
+**Download and resume training on another machine:**
+```bash
+# Pretrain resume — downloads latest.pt (includes model + optimizer + scheduler state)
+.venv/bin/modelscope download tianhaoz95/unbox-760m-base \
+    --local_dir checkpoints/pretrain/760m
+# The pretrain script auto-detects the checkpoint and skips already-seen data
+.venv/bin/python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
+
+# SFT resume — downloads full HF checkpoint directory
+.venv/bin/modelscope download tianhaoz95/unbox-760m-sft \
+    --local_dir checkpoints/sft/basic/checkpoint-3000
+# HF Trainer auto-resumes from step 3000 including mid-epoch data skip
+.venv/bin/python -m unbox_platform.sft.train --config configs/sft/basic.yaml
+```
+
+Both checkpoints include optimizer and scheduler state — training resumes exactly
+where it left off. The pretrain skip position is derived from the saved step count;
+the SFT skip uses HF Trainer's native `skip_first_batches`.
+
 ## Publishing Reports and Design Docs to GitHub Pages
 
 `docs/reports` and `docs/design` are symlinks to the root-level `reports/` and `design/` directories. Any `.md` file added to either directory is automatically included in the site on the next push — no copying, no nav entries required.
