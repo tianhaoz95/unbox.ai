@@ -272,27 +272,19 @@ Platform entry points — always use `.venv/bin/python` and `.venv/bin/torchrun`
 - For distributed tests, use `torch.distributed` with `gloo` backend on CPU to keep them runnable without a multi-GPU machine.
 - Numerical correctness tests compare against a naive reference implementation, not against HuggingFace outputs (avoids version drift).
 
-## Publishing Reports to GitHub Pages
+## Publishing Reports and Design Docs to GitHub Pages
 
-Reports live in two separate places by design:
+`docs/reports` and `docs/design` are symlinks to the root-level `reports/` and `design/` directories. Any `.md` file added to either directory is automatically included in the site on the next push — no copying, no nav entries required.
 
-- `reports/` — raw markdown, the canonical source, tracked in git for non-Pages consumers
-- `docs/reports/` — copy served by MkDocs; GitHub Pages reads only from `docs/`
+To publish:
+```bash
+# just add the file and push
+git add reports/my_report.md
+git commit -m "add report"
+git push
+```
 
-To publish a report from `reports/` to the site:
-
-1. Copy the file into `docs/reports/`:
-   ```bash
-   cp reports/<report_name>.md docs/reports/<report_name>.md
-   ```
-2. Add a nav entry in `mkdocs.yml` under the `Reports:` section:
-   ```yaml
-   - Reports:
-     - "My Report Title": reports/<report_name>.md
-   ```
-3. Commit both files and push — GitHub Actions will rebuild and deploy automatically.
-
-Do **not** edit only one copy and forget the other; they will diverge.
+GitHub Actions rebuilds and deploys automatically.
 
 ## Key Tensions to Navigate
 
