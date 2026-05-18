@@ -54,6 +54,7 @@ extra:
 plugins:
   - search
   - glightbox
+  - awesome-pages
   - i18n:
       docs_structure: suffix
       languages:
@@ -105,20 +106,3 @@ markdown_extensions:
   - toc:
       permalink: true
 
-nav:
-  - Home: index.md
-  - Curriculum:
-    - Overview: curriculum/00_overview.md
-    - "1 · Dataset Selection": curriculum/01_dataset.md
-    - "2 · Data Cleaning & Preparation": curriculum/02_data_cleaning.md
-    - "3 · Tokenizer Training": curriculum/03_tokenizer.md
-    - "4 · Model Architecture": curriculum/04_architecture.md
-    - "5 · Pre-training": curriculum/05_pretraining.md
-    - "6 · Supervised Fine-Tuning": curriculum/06_sft.md
-    - "7 · Reinforcement Learning": curriculum/07_rl.md
-    - "8 · Inference Engine": curriculum/08_inference.md
-  - Reports:
-    - "Step 10,000 Sanity Check": reports/sanity_check_step10000.md
-    - "Step 15,000 Sanity Check": reports/sanity_check_step15000.md
-    - "SFT User Token Masking Bug": reports/sft_user_token_masking_bug.md
-  - Experiments: experiments.md
