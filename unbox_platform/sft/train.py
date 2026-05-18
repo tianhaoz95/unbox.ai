@@ -14,6 +14,7 @@ from typing import Any
 import yaml
 from datasets import load_dataset
 from transformers import PreTrainedTokenizerFast
+from transformers.trainer_utils import get_last_checkpoint
 from trl import SFTConfig, SFTTrainer
 
 from unbox_platform.model.hf_adapter import UnboxConfig, UnboxForCausalLM
@@ -112,7 +113,10 @@ def main() -> None:
         processing_class=tokenizer,
     )
 
-    trainer.train()
+    resume_from = get_last_checkpoint(cfg.output_dir) if Path(cfg.output_dir).exists() else None
+    if resume_from:
+        print(f"Resuming from checkpoint: {resume_from}")
+    trainer.train(resume_from_checkpoint=resume_from)
     trainer.save_model(cfg.output_dir)
     tokenizer.save_pretrained(cfg.output_dir)
     print(f"SFT complete. Model saved to {cfg.output_dir}")
