@@ -7,7 +7,9 @@ modifying the core model code.
 Key differences from a native HF model:
 - attention_mask is accepted but ignored; causal masking is always applied
   internally via scaled_dot_product_attention(is_causal=True)
-- past_key_values (KV cache) are not yet supported
+- past_key_values (KV cache) are not yet supported; always pass use_cache=False to generate()
+- when tokenizing chat-template output, use add_special_tokens=False to avoid a spurious
+  trailing <|eos|> that breaks generation
 """
 
 from __future__ import annotations
@@ -58,6 +60,8 @@ class UnboxConfig(PretrainedConfig):
         kwargs.setdefault("tie_word_embeddings", tie_embeddings)
         # vocab_size is a PretrainedConfig built-in field
         super().__init__(vocab_size=vocab_size, **kwargs)
+        # HF internals (DynamicCache, etc.) expect num_hidden_layers
+        self.num_hidden_layers = self.num_layers
 
     def to_model_config(self) -> ModelConfig:
         return ModelConfig(
@@ -97,6 +101,9 @@ class UnboxForCausalLM(PreTrainedModel, GenerationMixin):
     config_class = UnboxConfig
     base_model_prefix = "model"
     supports_gradient_checkpointing = True
+    # KV cache is not implemented; disable it so generate() doesn't silently feed only the
+    # latest token and produce garbage predictions.
+    _supports_cache_class = False
     # transformers 5.x: {alias_key: canonical_key} — lm_head is the alias, embed_tokens is canonical
     _tied_weights_keys = {"model.lm_head.weight": "model.embed_tokens.weight"}
 
@@ -148,10 +155,12 @@ class UnboxForCausalLM(PreTrainedModel, GenerationMixin):
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
+        use_cache: bool = False,
         **kwargs,
     ) -> CausalLMOutputWithPast:
         # attention_mask is accepted for API compatibility but not used;
         # causal masking is handled internally via is_causal=True in SDPA.
+        # use_cache is accepted but ignored; KV cache is not implemented.
         logits, loss = self.model(input_ids, labels)
         return CausalLMOutputWithPast(loss=loss, logits=logits)
 
