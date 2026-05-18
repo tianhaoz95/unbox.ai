@@ -17,6 +17,7 @@ from typing import Optional
 
 import torch
 from transformers import PretrainedConfig, PreTrainedModel
+from transformers.generation import GenerationMixin
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from .config import ModelConfig
@@ -90,7 +91,7 @@ class UnboxConfig(PretrainedConfig):
         )
 
 
-class UnboxForCausalLM(PreTrainedModel):
+class UnboxForCausalLM(PreTrainedModel, GenerationMixin):
     """HF-compatible causal LM wrapper around the Unbox Transformer."""
 
     config_class = UnboxConfig
