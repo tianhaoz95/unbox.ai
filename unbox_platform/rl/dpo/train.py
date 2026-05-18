@@ -57,6 +57,16 @@ class DPOTrainConfig:
     grad_clip: float = 1.0
     dtype: str = "bfloat16"
 
+    def __post_init__(self) -> None:
+        # PyYAML parses bare scientific notation (e.g. 5e-7) as str, not float.
+        # Coerce here so a missing decimal point in the YAML doesn't silently crash.
+        self.learning_rate = float(self.learning_rate)
+        self.beta = float(self.beta)
+        self.weight_decay = float(self.weight_decay)
+        self.grad_clip = float(self.grad_clip)
+        self.beta1 = float(self.beta1)
+        self.beta2 = float(self.beta2)
+
     # Logging / saving
     log_every_steps: int = 10
     eval_every_steps: int = 200
