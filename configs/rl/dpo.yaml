@@ -27,6 +27,6 @@ dtype: bfloat16
 log_every_steps: 10
 eval_every_steps: 200
 save_every_steps: 500
-use_wandb: false
+use_wandb: true
 wandb_project: unbox-ai-dpo
-wandb_run_name: ""
+wandb_run_name: "dpo-ultrafeedback-760m"
