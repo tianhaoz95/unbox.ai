@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Optional
 
 import torch
-from transformers import PretrainedConfig, PreTrainedModel
+from transformers import AutoConfig, AutoModelForCausalLM, PretrainedConfig, PreTrainedModel
 from transformers.generation import GenerationMixin
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -112,10 +112,6 @@ class UnboxForCausalLM(PreTrainedModel, GenerationMixin):
         self.model = Transformer(config.to_model_config())
         self.post_init()
 
-    def _set_gradient_checkpointing(self, module, value: bool = False) -> None:
-        if hasattr(module, "gradient_checkpointing"):
-            module.gradient_checkpointing = value
-
     def _recompute_rope_buffers(self) -> None:
         """Recompute freqs_cis outside HF's _fast_init context.
 
@@ -186,3 +182,10 @@ class UnboxForCausalLM(PreTrainedModel, GenerationMixin):
         model._recompute_rope_buffers()
         model.eval()
         return model
+
+
+# Register with HF Auto classes so that AutoConfig / AutoModelForCausalLM can load
+# checkpoints saved by this module. This is needed for TRL's DPOTrainer (and PEFT,
+# etc.) which call AutoModelForCausalLM.from_pretrained internally.
+AutoConfig.register("unbox", UnboxConfig)
+AutoModelForCausalLM.register(UnboxConfig, UnboxForCausalLM)
