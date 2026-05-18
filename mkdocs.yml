@@ -77,6 +77,7 @@ plugins:
             "6 · Supervised Fine-Tuning": "6 · 监督微调"
             "7 · Reinforcement Learning": "7 · 强化学习"
             "8 · Inference Engine": "8 · 推理引擎"
+            Design: 设计
             Reports: 报告
             "Step 10,000 Sanity Check": "第 10,000 步健全性检查"
             "Step 15,000 Sanity Check": "第 15,000 步健全性检查"

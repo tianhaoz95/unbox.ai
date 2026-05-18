@@ -1,4 +1,4 @@
-# unbox.ai
+# UNBOX.ai
 
 **A full-stack LLM research and education platform — built from scratch.**
 
