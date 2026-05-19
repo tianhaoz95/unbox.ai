@@ -20,3 +20,10 @@ class DataConfig:
 
     # Local cache directory for downloaded datasets
     cache_dir: str = "data/cache"
+
+    # Dataset source: "huggingface" (default) or "modelscope" (for restricted regions).
+    # When using modelscope, set ms_dataset_name to the ModelScope repo ID if it differs
+    # from data_path (e.g. "AI-ModelScope/fineweb-edu"). Leave empty to try data_path as-is.
+    dataset_source: str = "huggingface"
+    ms_dataset_name: str = ""
+    ms_dataset_subset: str = ""  # ModelScope subset name (equivalent to HF's `name` param)

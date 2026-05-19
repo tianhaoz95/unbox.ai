@@ -73,15 +73,17 @@ class PretrainDataset(Dataset):
                     yield text
 
     def _iter_hf_dataset(self) -> Iterator[str]:
-        from datasets import load_dataset  # lazy import
+        from unbox_platform.data.loader import load_dataset_from_source
 
-        ds = load_dataset(
-            self.config.data_path,
-            name=self.config.dataset_name,
+        ds = load_dataset_from_source(
+            hf_name=self.config.data_path,
             split="train",
+            source=self.config.dataset_source,
+            ms_name=self.config.ms_dataset_name,
+            ms_subset=self.config.ms_dataset_subset,
             streaming=True,
             cache_dir=self.config.cache_dir,
-            trust_remote_code=False,
+            name=self.config.dataset_name,  # HF subset; ignored by MS loader
         )
         n_eval = int(self.config.eval_fraction * 9_765_625)  # approx docs in 10BT
 

@@ -18,6 +18,12 @@ class SFTTrainConfig:
     eval_dataset_split: str = "test_sft"
     max_samples: int = -1  # -1 = use all
 
+    # Dataset source: "huggingface" (default) or "modelscope" (for restricted regions).
+    # Set ms_dataset_name to the ModelScope repo ID if it differs from dataset_name
+    # (e.g. "AI-ModelScope/ultrachat_200k"). Leave empty to try dataset_name as-is.
+    dataset_source: str = "huggingface"
+    ms_dataset_name: str = ""
+
     # Model / sequence
     max_seq_len: int = 2048
 
