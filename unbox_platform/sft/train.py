@@ -65,12 +65,15 @@ def main() -> None:
     model = build_model(cfg)
     tokenizer = build_tokenizer(cfg)
 
+    is_ms = cfg.dataset_source == "modelscope"
     dataset = load_dataset_from_source(
-        cfg.dataset_name, cfg.dataset_split,
+        cfg.dataset_name,
+        cfg.ms_dataset_split if is_ms else cfg.dataset_split,
         source=cfg.dataset_source, ms_name=cfg.ms_dataset_name,
     )
     eval_dataset = load_dataset_from_source(
-        cfg.dataset_name, cfg.eval_dataset_split,
+        cfg.dataset_name,
+        cfg.ms_eval_dataset_split if is_ms else cfg.eval_dataset_split,
         source=cfg.dataset_source, ms_name=cfg.ms_dataset_name,
     )
 

@@ -41,8 +41,8 @@ class DPOTrainConfig:
     max_samples: int = -1  # -1 = use all
 
     # Dataset source: "huggingface" (default) or "modelscope" (for restricted regions).
-    # Set ms_dataset_name to the ModelScope repo ID if it differs from dataset_name
-    # (e.g. "AI-ModelScope/ultrafeedback_binarized"). Leave empty to try dataset_name as-is.
+    # NOTE: ultrafeedback_binarized has no ModelScope mirror — only the raw (un-binarized)
+    # AI-ModelScope/ultrafeedback exists, which has a different schema. DPO requires HF.
     dataset_source: str = "huggingface"
     ms_dataset_name: str = ""
 

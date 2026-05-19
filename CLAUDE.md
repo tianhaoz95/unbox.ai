@@ -315,6 +315,34 @@ Both checkpoints include optimizer and scheduler state — training resumes exac
 where it left off. The pretrain skip position is derived from the saved step count;
 the SFT skip uses HF Trainer's native `skip_first_batches`.
 
+## Downloading Datasets in Geolocation-Restricted Regions
+
+All training scripts accept `--dataset-source modelscope` to download datasets from
+ModelScope instead of HuggingFace. The ModelScope mirrors and their caveats are:
+
+| Stage | HF dataset | ModelScope mirror | Notes |
+|---|---|---|---|
+| Pretrain | `HuggingFaceFW/fineweb-edu` | `AI-ModelScope/fineweb-edu` | Full dataset; `sample-10BT` subset not mirrored — streams everything |
+| SFT | `HuggingFaceH4/ultrachat_200k` | `AI-ModelScope/ultrachat_200k` | Split names differ: `train`/`test` instead of `train_sft`/`test_sft` — handled automatically |
+| DPO | `HuggingFaceH4/ultrafeedback_binarized` | ❌ No mirror | Only raw `AI-ModelScope/ultrafeedback` exists (different schema); DPO requires HF |
+
+These defaults are baked into the config dataclasses — just pass `--dataset-source modelscope`:
+
+```bash
+# Pretrain (streaming from ModelScope)
+.venv/bin/python -m unbox_platform.train.pretrain \
+    --config configs/pretrain/760m.yaml --dataset-source modelscope
+
+# SFT (split name remapping is automatic)
+.venv/bin/python -m unbox_platform.sft.train \
+    --config configs/sft/basic.yaml --dataset-source modelscope
+```
+
+Or set `dataset_source: modelscope` in the YAML config once so you don't need the flag.
+The pretrain config streams `AI-ModelScope/fineweb-edu` in full when using ModelScope;
+if you need exactly the 10BT sample, download the JSONL locally first and point
+`data_path` at the local file.
+
 ## Publishing Reports and Design Docs to GitHub Pages
 
 `docs/reports` and `docs/design` are symlinks to the root-level `reports/` and `design/` directories. Any `.md` file added to either directory is automatically included in the site on the next push — no copying, no nav entries required.
