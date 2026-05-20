@@ -298,9 +298,11 @@ The `upload` command creates the repo automatically if it does not exist.
 
 **Download and resume training on another machine:**
 ```bash
-# Pretrain resume — downloads latest.pt (includes model + optimizer + scheduler state)
+# Pretrain resume — downloads latest.pt + tokenizer
 .venv/bin/modelscope download tianhaoz95/unbox-760m-base \
     --local_dir checkpoints/pretrain/760m
+mkdir -p checkpoints/tokenizer
+cp checkpoints/pretrain/760m/tokenizer/* checkpoints/tokenizer/
 # The pretrain script auto-detects the checkpoint and skips already-seen data
 .venv/bin/python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
