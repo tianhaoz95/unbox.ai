@@ -20,11 +20,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+from datasets import load_dataset
 from transformers import AutoTokenizer
 from transformers.trainer_utils import get_last_checkpoint
 from trl import DPOConfig, DPOTrainer
 
-from unbox_platform.data.loader import load_dataset_from_source
 from unbox_platform.model.hf_adapter import UnboxForCausalLM
 
 
@@ -39,12 +39,6 @@ class DPOTrainConfig:
     train_split: str = "train_prefs"
     eval_split: str = "test_prefs"
     max_samples: int = -1  # -1 = use all
-
-    # Dataset source: "huggingface" (default) or "modelscope" (for restricted regions).
-    # NOTE: ultrafeedback_binarized has no ModelScope mirror — only the raw (un-binarized)
-    # AI-ModelScope/ultrafeedback exists, which has a different schema. DPO requires HF.
-    dataset_source: str = "huggingface"
-    ms_dataset_name: str = ""
 
     # DPO hyperparameters
     beta: float = 0.1
@@ -85,15 +79,11 @@ class DPOTrainConfig:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--dataset-source", choices=["huggingface", "modelscope"],
-                        help="Override dataset_source from config (use 'modelscope' in restricted regions)")
     args = parser.parse_args()
 
     with open(args.config) as f:
         raw = yaml.safe_load(f)
     cfg = DPOTrainConfig(**{k: v for k, v in raw.items() if k in DPOTrainConfig.__dataclass_fields__})
-    if args.dataset_source:
-        cfg.dataset_source = args.dataset_source
 
     import torch
     model = UnboxForCausalLM.from_pretrained(cfg.model_path, torch_dtype=torch.bfloat16)
@@ -105,14 +95,8 @@ def main() -> None:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    dataset = load_dataset_from_source(
-        cfg.dataset_name, cfg.train_split,
-        source=cfg.dataset_source, ms_name=cfg.ms_dataset_name,
-    )
-    eval_dataset = load_dataset_from_source(
-        cfg.dataset_name, cfg.eval_split,
-        source=cfg.dataset_source, ms_name=cfg.ms_dataset_name,
-    )
+    dataset = load_dataset(cfg.dataset_name, split=cfg.train_split)
+    eval_dataset = load_dataset(cfg.dataset_name, split=cfg.eval_split)
 
     # Drop the string "prompt" column — ultrafeedback has a string prompt that conflicts
     # with TRL's conversational processing. TRL's extract_prompt will re-derive a

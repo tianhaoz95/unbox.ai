@@ -12,11 +12,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from datasets import load_dataset
 from transformers import PreTrainedTokenizerFast
 from transformers.trainer_utils import get_last_checkpoint
 from trl import SFTConfig, SFTTrainer
 
-from unbox_platform.data.loader import load_dataset_from_source
 from unbox_platform.model.hf_adapter import UnboxConfig, UnboxForCausalLM
 
 from .config import SFTTrainConfig
@@ -53,29 +53,16 @@ def build_tokenizer(cfg: SFTTrainConfig) -> PreTrainedTokenizerFast:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--dataset-source", choices=["huggingface", "modelscope"],
-                        help="Override dataset_source from config (use 'modelscope' in restricted regions)")
     args = parser.parse_args()
 
     raw = load_config(args.config)
     cfg = SFTTrainConfig(**{k: v for k, v in raw.items() if k in SFTTrainConfig.__dataclass_fields__})
-    if args.dataset_source:
-        cfg.dataset_source = args.dataset_source
 
     model = build_model(cfg)
     tokenizer = build_tokenizer(cfg)
 
-    is_ms = cfg.dataset_source == "modelscope"
-    dataset = load_dataset_from_source(
-        cfg.dataset_name,
-        cfg.ms_dataset_split if is_ms else cfg.dataset_split,
-        source=cfg.dataset_source, ms_name=cfg.ms_dataset_name,
-    )
-    eval_dataset = load_dataset_from_source(
-        cfg.dataset_name,
-        cfg.ms_eval_dataset_split if is_ms else cfg.eval_dataset_split,
-        source=cfg.dataset_source, ms_name=cfg.ms_dataset_name,
-    )
+    dataset = load_dataset(cfg.dataset_name, split=cfg.dataset_split)
+    eval_dataset = load_dataset(cfg.dataset_name, split=cfg.eval_dataset_split)
 
     if cfg.max_samples > 0:
         dataset = dataset.select(range(min(cfg.max_samples, len(dataset))))

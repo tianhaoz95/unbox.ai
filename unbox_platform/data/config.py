@@ -20,10 +20,3 @@ class DataConfig:
 
     # Local cache directory for downloaded datasets
     cache_dir: str = "data/cache"
-
-    # Dataset source: "huggingface" (default) or "modelscope" (for restricted regions).
-    # ms_dataset_name defaults to the verified ModelScope mirror of data_path.
-    # ms_dataset_subset: ModelScope subset name (equivalent to HF's `name` param).
-    dataset_source: str = "huggingface"
-    ms_dataset_name: str = "AI-ModelScope/fineweb-edu"
-    ms_dataset_subset: str = ""  # sample-10BT subset is not mirrored; streams full dataset
