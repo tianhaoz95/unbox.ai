@@ -1,0 +1,31 @@
+name: Deploy Preview to Firebase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/preview/**"
+      - ".github/workflows/deploy-preview.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy to Firebase Hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          cd apps/preview
+          firebase deploy --only hosting
