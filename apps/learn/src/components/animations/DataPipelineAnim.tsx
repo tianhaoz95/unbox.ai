@@ -37,28 +37,32 @@ export function DataPipelineAnim() {
   }, [activeStage]);
 
   return (
-    <div className="card-glass p-6 overflow-hidden">
+    <div className="card-glass p-6">
       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
         Pipeline Visualization
       </div>
 
-      {/* Stage flow */}
-      <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2">
+      {/* Stage flow — py-5 gives 20px clearance so the 16px glow shadow fits
+          inside the overflow-x-auto clipping region without being cut off */}
+      <div className="flex items-center gap-1 mb-6 overflow-x-auto py-5">
         {stages.map((stage, i) => (
           <div key={stage.id} className="flex items-center gap-1 flex-shrink-0">
-            <motion.div
-              animate={{
-                scale: activeStage === i ? 1.05 : 1,
-                boxShadow: activeStage === i
-                  ? `0 0 20px ${stage.color}40`
-                  : "none",
-              }}
-              transition={{ duration: 0.3 }}
+            <div
               className="flex flex-col items-center gap-1.5 cursor-pointer"
               onClick={() => setActiveStage(i)}
             >
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all duration-300"
+              {/* Shadow lives on the icon div so it stays well within the
+                  overflow container; "none" → shadow can't be interpolated,
+                  so inactive state uses a zero-blur transparent value */}
+              <motion.div
+                animate={{
+                  scale: activeStage === i ? 1.05 : 1,
+                  boxShadow: activeStage === i
+                    ? `0 0 16px ${stage.color}cc`
+                    : `0 0 0px ${stage.color}00`,
+                }}
+                transition={{ duration: 0.3 }}
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
                 style={{
                   background: activeStage === i
                     ? `${stage.color}25`
@@ -67,14 +71,14 @@ export function DataPipelineAnim() {
                 }}
               >
                 {stage.icon}
-              </div>
+              </motion.div>
               <span
                 className="text-xs font-medium whitespace-nowrap transition-colors"
                 style={{ color: activeStage === i ? stage.color : "#6b7280" }}
               >
                 {stage.label}
               </span>
-            </motion.div>
+            </div>
             {i < stages.length - 1 && (
               <div className="w-6 flex items-center justify-center -mt-4">
                 <motion.div
