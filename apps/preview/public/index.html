@@ -1553,7 +1553,7 @@
 
       <h1 class="hero-title">
         <div class="solid" data-i18n="hero-title-1">Build a real LLM.</div>
-        <div class="solid">Understand <span class="accent-word" data-i18n="hero-title-2">every line.</span></div>
+        <div class="solid" data-i18n="hero-title-2">Understand <span class="accent-word">every line.</span></div>
       </h1>
 
       <p class="hero-sub" data-i18n="hero-sub">
@@ -2147,7 +2147,7 @@
       'nav-btn':       'Join waitlist',
       'hero-badge':    '7-module LLM course \u00b7 building in public',
       'hero-title-1':  'Build a real LLM.',
-      'hero-title-2':  'every line.',
+      'hero-title-2':  'Understand <span class="accent-word">every line.</span>',
       'hero-sub':      'A hands-on course that takes you from a blank tokenizer to a trained <code>760M parameter model</code> \u2014 with readable source code and real results at every step. No black boxes.',
       'hero-btn':      'Get early access',
       'success-msg':   'You\u2019re on the list \u2014 we\u2019ll be in touch.',
@@ -2202,7 +2202,7 @@
       'nav-btn':       '\u52a0\u5165\u5019\u8865\u540d\u5355',
       'hero-badge':    '7 \u6a21\u5757\u5927\u8bed\u8a00\u6a21\u578b\u8bfe\u7a0b \u00b7 \u5f00\u6e90\u5171\u5efa\u4e2d',
       'hero-title-1':  '\u4ece\u96f6\u6784\u5efa\u771f\u5b9e\u5927\u6a21\u578b\u3002',
-      'hero-title-2':  '\u7406\u6e05\u6bcf\u4e00\u884c\u4ee3\u7801\u3002',
+      'hero-title-2':  '<span class="accent-word">\u7406\u6e05\u6bcf\u4e00\u884c\u4ee3\u7801</span>',
       'hero-sub':      '\u4e00\u95e8\u5b9e\u6218\u5bfc\u5411\u7684\u7cfb\u7edf\u6027\u8bfe\u7a0b\u3002\u5e26\u4f60\u4ece\u96f6\u5b9e\u73b0\u5206\u8bcd\u5668\uff0c\u4e00\u6b65\u6b65\u8bad\u7ec3\u51fa <code>760M \u53c2\u6570\u5927\u8bed\u8a00\u6a21\u578b</code> \u2014\u2014 \u6bcf\u4e00\u6b65\u90fd\u914d\u6709\u6781\u5177\u53ef\u8bfb\u6027\u7684\u6e90\u7801\u4e0e\u771f\u5b9e\u8bad\u7ec3\u6210\u679c\u3002\u62d2\u7edd\u9ed1\u76d2\u3002',
       'hero-btn':      '\u65e9\u671f\u8bbf\u95ee',
       'success-msg':   '\u767b\u8bb0\u6210\u529f\uff01\u53d1\u5e03\u65f6\u6211\u4eec\u5c06\u4e0e\u60a8\u8054\u7cfb\u3002',
@@ -2394,15 +2394,26 @@
     const visStageTitle = document.getElementById('vis-stage-title');
     const visPanels = Array.from(document.querySelectorAll('.vis-stage-panel'));
 
-    const stageMetadata = [
-      { tag: "Stage 01", title: "BPE Tokenizer" },
-      { tag: "Stage 02", title: "Data Pipeline" },
-      { tag: "Stage 03", title: "Pretraining" },
-      { tag: "Stage 04", title: "Supervised Fine-tuning" },
-      { tag: "Stage 05", title: "RL Post-training" },
-      { tag: "Stage 06", title: "Knowledge Distillation" },
-      { tag: "Stage 07", title: "Inference serving" }
-    ];
+    const STAGE_METADATA = {
+      en: [
+        { tag: "Stage 01", title: "BPE Tokenizer" },
+        { tag: "Stage 02", title: "Data Pipeline" },
+        { tag: "Stage 03", title: "Pretraining" },
+        { tag: "Stage 04", title: "Supervised Fine-tuning" },
+        { tag: "Stage 05", title: "RL Post-training" },
+        { tag: "Stage 06", title: "Knowledge Distillation" },
+        { tag: "Stage 07", title: "Inference serving" }
+      ],
+      zh: [
+        { tag: "阶段 01", title: "分词器" },
+        { tag: "阶段 02", title: "数据流水线" },
+        { tag: "阶段 03", title: "预训练" },
+        { tag: "阶段 04", title: "监督微调" },
+        { tag: "阶段 05", title: "强化学习对齐" },
+        { tag: "阶段 06", title: "知识蒸馏" },
+        { tag: "阶段 07", title: "推理引擎" }
+      ]
+    };
 
     let activeInterval = null;
 
@@ -2737,8 +2748,10 @@
       movePacket(idx, true);
 
       // Update stage visualizer header + panels
-      if (visStageTag) visStageTag.textContent = stageMetadata[idx].tag;
-      if (visStageTitle) visStageTitle.textContent = stageMetadata[idx].title;
+      const _stageLang = localStorage.getItem('unbox-lang') || 'en';
+      const _stageMeta = (STAGE_METADATA[_stageLang] || STAGE_METADATA.en)[idx];
+      if (visStageTag) visStageTag.textContent = _stageMeta.tag;
+      if (visStageTitle) visStageTitle.textContent = _stageMeta.title;
       visPanels.forEach((p, i) => {
         p.classList.toggle('active', i === idx);
       });
