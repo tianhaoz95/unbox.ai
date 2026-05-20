@@ -1,20 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, BookOpen, ChevronDown, LogIn, LogOut } from "lucide-react";
+import { Menu, X, BookOpen, ChevronDown, LogIn, LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { AuthModal } from "./AuthModal";
-
-const chapters = [
-  { path: "/data", label: "Data Pipeline", num: "01", ready: true },
-  { path: "/tokenizer", label: "Tokenizer", num: "02", ready: true },
-  { path: "/pretraining", label: "Pre-training", num: "03", ready: true },
-  { path: "/eval", label: "Evaluation", num: "04", ready: true },
-  { path: "/sft", label: "SFT", num: "05", ready: true },
-  { path: "/dpo", label: "DPO", num: "06", ready: true },
-  { path: "/inference", label: "Inference", num: "07", ready: false },
-  { path: "/distillation", label: "Distillation", num: "08", ready: false },
-];
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -23,6 +14,19 @@ export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const { lang, setLang, t } = useLanguage();
+
+  const chapters = [
+    { path: "/data", label: t("ch01.title"), num: "01", ready: true },
+    { path: "/tokenizer", label: t("ch02.title"), num: "02", ready: true },
+    { path: "/pretraining", label: t("ch03.title"), num: "03", ready: true },
+    { path: "/eval", label: t("ch04.title"), num: "04", ready: true },
+    { path: "/sft", label: t("ch05.title"), num: "05", ready: true },
+    { path: "/dpo", label: t("ch06.title"), num: "06", ready: true },
+    { path: "/inference", label: t("ch07.title"), num: "07", ready: false },
+    { path: "/distillation", label: t("ch08.title"), num: "08", ready: false },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/5 bg-surface-900/80 backdrop-blur-xl">
@@ -48,7 +52,7 @@ export function Navbar() {
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              Overview
+              {t("nav.overview")}
             </Link>
 
             {/* Chapters dropdown */}
@@ -57,7 +61,7 @@ export function Navbar() {
                 onClick={() => setChaptersOpen(!chaptersOpen)}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
               >
-                Chapters
+                {t("nav.chapters")}
                 <ChevronDown
                   size={14}
                   className={`transition-transform ${chaptersOpen ? "rotate-180" : ""}`}
@@ -88,7 +92,7 @@ export function Navbar() {
                         <span>{ch.label}</span>
                         {!ch.ready && (
                           <span className="ml-auto text-xs px-1.5 py-0.5 rounded bg-surface-600 text-gray-500">
-                            Soon
+                            {t("nav.soon")}
                           </span>
                         )}
                       </Link>
@@ -104,8 +108,42 @@ export function Navbar() {
               rel="noopener noreferrer"
               className="ml-2 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
             >
-              GitHub
+              {t("nav.github")}
             </a>
+
+            {/* Language switcher */}
+            <div className="flex items-center ml-1 rounded-lg border border-white/10 overflow-hidden">
+              <button
+                onClick={() => setLang("en")}
+                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  lang === "en"
+                    ? "bg-brand-500/20 text-brand-300"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {t("lang.en")}
+              </button>
+              <div className="w-px h-4 bg-white/10" />
+              <button
+                onClick={() => setLang("zh")}
+                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  lang === "zh"
+                    ? "bg-brand-500/20 text-brand-300"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {t("lang.zh")}
+              </button>
+            </div>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={t("theme.toggle")}
+              className="ml-1 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
 
             {/* Auth */}
             {user ? (
@@ -141,7 +179,7 @@ export function Navbar() {
                         className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
                       >
                         <LogOut size={14} />
-                        Sign out
+                        {t("nav.signOut")}
                       </button>
                     </motion.div>
                   )}
@@ -153,20 +191,28 @@ export function Navbar() {
                 className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
               >
                 <LogIn size={14} />
-                Sign in
+                {t("nav.signIn")}
               </button>
             )}
           </div>
 
           <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {/* Mobile right controls */}
+          <div className="md:hidden flex items-center gap-1">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-gray-400 hover:text-white"
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <button
+              className="p-2 rounded-lg text-gray-400 hover:text-white"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -185,7 +231,7 @@ export function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="block px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/5"
               >
-                Overview
+                {t("nav.overview")}
               </Link>
               {chapters.map((ch) => (
                 <Link
@@ -198,9 +244,25 @@ export function Navbar() {
                 >
                   <span className="font-mono text-xs text-gray-600">{ch.num}</span>
                   {ch.label}
-                  {!ch.ready && <span className="ml-auto text-xs text-gray-600">Soon</span>}
+                  {!ch.ready && <span className="ml-auto text-xs text-gray-600">{t("nav.soon")}</span>}
                 </Link>
               ))}
+              {/* Mobile language switcher */}
+              <div className="flex items-center gap-2 px-3 py-2">
+                <span className="text-xs text-gray-600">{t("lang.en") === "EN" ? "Language" : "语言"}:</span>
+                <button
+                  onClick={() => setLang("en")}
+                  className={`text-xs px-2 py-1 rounded ${lang === "en" ? "bg-brand-500/20 text-brand-300" : "text-gray-500"}`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLang("zh")}
+                  className={`text-xs px-2 py-1 rounded ${lang === "zh" ? "bg-brand-500/20 text-brand-300" : "text-gray-500"}`}
+                >
+                  中
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

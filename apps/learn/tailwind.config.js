@@ -21,11 +21,11 @@ export default {
           900: "#0c4a6e",
         },
         surface: {
-          900: "#0a0e1a",
-          800: "#0f1629",
-          700: "#151e38",
-          600: "#1e2d4a",
-          500: "#253558",
+          900: "rgb(var(--surface-900) / <alpha-value>)",
+          800: "rgb(var(--surface-800) / <alpha-value>)",
+          700: "rgb(var(--surface-700) / <alpha-value>)",
+          600: "rgb(var(--surface-600) / <alpha-value>)",
+          500: "rgb(var(--surface-500) / <alpha-value>)",
         },
       },
       animation: {

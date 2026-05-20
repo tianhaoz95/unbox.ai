@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MessageSquare, Clock } from "lucide-react";
 import type { Comment } from "../hooks/useComments";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface Props {
   open: boolean;
@@ -10,15 +11,17 @@ interface Props {
   chapterTitle: string;
 }
 
-function timeAgo(date: Date): string {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
 export function CommentsPanel({ open, onClose, comments, loading, chapterTitle }: Props) {
+  const { t } = useLanguage();
+
+  function timeAgo(date: Date): string {
+    const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diff < 60) return t("comments.justNow");
+    if (diff < 3600) return t("comments.minsAgo").replace("{n}", String(Math.floor(diff / 60)));
+    if (diff < 86400) return t("comments.hoursAgo").replace("{n}", String(Math.floor(diff / 3600)));
+    return t("comments.daysAgo").replace("{n}", String(Math.floor(diff / 86400)));
+  }
+
   return (
     <AnimatePresence>
       {open && (
@@ -47,7 +50,7 @@ export function CommentsPanel({ open, onClose, comments, loading, chapterTitle }
               <div>
                 <div className="flex items-center gap-2">
                   <MessageSquare size={16} className="text-brand-400" />
-                  <span className="font-semibold text-white text-sm">Comments</span>
+                  <span className="font-semibold text-white text-sm">{t("comments.panelTitle")}</span>
                   {comments.length > 0 && (
                     <span className="px-1.5 py-0.5 rounded-full text-xs bg-brand-500/20 text-brand-300 font-mono">
                       {comments.length}
@@ -79,10 +82,7 @@ export function CommentsPanel({ open, onClose, comments, loading, chapterTitle }
               ) : comments.length === 0 ? (
                 <div className="text-center py-16">
                   <MessageSquare size={32} className="text-gray-700 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500">No comments yet</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Select any text in the chapter to add one
-                  </p>
+                  <p className="text-sm text-gray-500">{t("comments.empty")}</p>
                 </div>
               ) : (
                 comments.map((c) => (
@@ -131,7 +131,7 @@ export function CommentsPanel({ open, onClose, comments, loading, chapterTitle }
             {/* Footer hint */}
             <div className="px-4 py-3 border-t border-white/8">
               <p className="text-xs text-gray-600 text-center">
-                Select any text in the chapter to comment on it
+                {t("comments.selectText")}
               </p>
             </div>
           </motion.div>

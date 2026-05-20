@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface Props {
   open: boolean;
@@ -21,6 +22,7 @@ function GoogleIcon() {
 
 export function AuthModal({ open, onClose }: Props) {
   const { signInWithGoogle } = useAuth();
+  const { t } = useLanguage();
 
   const handleSignIn = async () => {
     try {
@@ -66,11 +68,10 @@ export function AuthModal({ open, onClose }: Props) {
               </div>
 
               <h2 className="text-xl font-bold text-white text-center mb-2">
-                Sign in to comment
+                {t("auth.title")}
               </h2>
               <p className="text-sm text-gray-400 text-center mb-6 leading-relaxed">
-                Select any text in a chapter and leave feedback. Your comments
-                help us improve the content.
+                {t("auth.subtitle")}
               </p>
 
               <button
@@ -78,11 +79,11 @@ export function AuthModal({ open, onClose }: Props) {
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-gray-50 text-gray-900 font-semibold text-sm transition-colors shadow-sm"
               >
                 <GoogleIcon />
-                Continue with Google
+                {t("auth.google")}
               </button>
 
               <p className="text-xs text-gray-600 text-center mt-4">
-                Comments are visible to everyone. Be constructive.
+                {t("auth.disclaimer")}
               </p>
             </div>
           </motion.div>

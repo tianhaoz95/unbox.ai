@@ -8,6 +8,7 @@ import { SelectionCommentLayer } from "./SelectionCommentLayer";
 import { CommentsPanel } from "./CommentsPanel";
 import { AuthModal } from "./AuthModal";
 import { useComments } from "../hooks/useComments";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface ChapterLayoutProps {
   num: string;
@@ -32,6 +33,14 @@ export function ChapterLayout({
   const { comments, loading, addComment } = useComments(pathname);
   const [panelOpen, setPanelOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const { t } = useLanguage();
+
+  const commentLabel =
+    comments.length > 0
+      ? comments.length === 1
+        ? t("comments.count").replace("{n}", String(comments.length))
+        : t("comments.countMany").replace("{n}", String(comments.length))
+      : t("chapter.comments");
 
   return (
     <>
@@ -47,10 +56,12 @@ export function ChapterLayout({
         {comments.length > 0 ? (
           <span>
             <span className="text-brand-300 font-semibold">{comments.length}</span>{" "}
-            comment{comments.length !== 1 ? "s" : ""}
+            {comments.length === 1
+              ? t("comments.count").replace("{n}", "").trim()
+              : t("comments.countMany").replace("{n}", "").trim()}
           </span>
         ) : (
-          "Comments"
+          commentLabel
         )}
       </motion.button>
 
@@ -101,7 +112,7 @@ export function ChapterLayout({
               >
                 <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 <div>
-                  <div className="text-xs text-gray-600 mb-0.5">Previous</div>
+                  <div className="text-xs text-gray-600 mb-0.5">{t("chapter.prev")}</div>
                   <div>{prev.label}</div>
                 </div>
               </Link>
@@ -114,7 +125,7 @@ export function ChapterLayout({
                 className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors group text-right"
               >
                 <div>
-                  <div className="text-xs text-gray-600 mb-0.5">Next Chapter</div>
+                  <div className="text-xs text-gray-600 mb-0.5">{t("chapter.next")}</div>
                   <div>{next.label}</div>
                 </div>
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />

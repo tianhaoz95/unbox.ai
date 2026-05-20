@@ -4,6 +4,7 @@ import { CodeBlock } from "../components/CodeBlock";
 import { Callout } from "../components/Callout";
 import { TransformerAnim } from "../components/animations/TransformerAnim";
 import { TrainingLoopAnim } from "../components/animations/TrainingLoopAnim";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const modelConfigCode = `# unbox_platform/model/config.py
 from dataclasses import dataclass, field
@@ -224,14 +225,15 @@ def load_checkpoint(path: str, model, optimizer, scheduler, scaler) -> int:
 `;
 
 export function PretrainingPage() {
+  const { t } = useLanguage();
   return (
     <ChapterLayout
       num="03"
-      title="Pre-training"
-      subtitle="Feed the packed token sequences into a Transformer and predict the next token. This is where the model learns language, facts, and reasoning."
+      title={t("ch03.title")}
+      subtitle={t("pre.subtitle")}
       color="text-brand-400"
-      prev={{ path: "/tokenizer", label: "Tokenizer" }}
-      next={{ path: "/eval", label: "Evaluation" }}
+      prev={{ path: "/tokenizer", label: t("ch02.title") }}
+      next={{ path: "/eval", label: t("ch04.title") }}
     >
       {/* Live animations */}
       <div className="grid sm:grid-cols-2 gap-4">
@@ -239,19 +241,15 @@ export function PretrainingPage() {
         <TrainingLoopAnim />
       </div>
 
-      <Section stepNum={1} title="The objective: next-token prediction">
-        <p className="prose-custom text-base">
-          Pre-training is conceptually simple: given a sequence of tokens, predict
-          the next one. Do this for trillions of tokens from diverse text and the
-          model learns grammar, facts, reasoning patterns, and much more.
-        </p>
+      <Section stepNum={1} title={t("pre.s1.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("pre.s1.p1") }} />
 
         <div className="card-glass p-5">
-          <div className="text-sm font-semibold text-white mb-3">Teacher forcing</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("pre.s1.tf.title")}</div>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <span className="text-xs font-semibold text-gray-600 w-14 flex-shrink-0 mt-0.5">
-                Input
+                {t("pre.s1.tf.input")}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {["The", "cat", "sat", "on", "the"].map((tok, i) => (
@@ -263,7 +261,7 @@ export function PretrainingPage() {
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xs font-semibold text-gray-600 w-14 flex-shrink-0 mt-0.5">
-                Target
+                {t("pre.s1.tf.target")}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {["cat", "sat", "on", "the", "mat"].map((tok, i) => (
@@ -274,53 +272,21 @@ export function PretrainingPage() {
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Input is shifted by 1. Every position predicts the next token in parallel during training.
-          </p>
+          <p className="text-xs text-gray-500 mt-3">{t("pre.s1.tf.note")}</p>
         </div>
 
-        <Callout type="insight">
-          One training example generates T prediction tasks simultaneously. A 1024-token
-          sequence gives you 1023 (input, target) pairs in a single forward pass.
-          This is why transformer training is so much more efficient than
-          recurrent networks, which process one step at a time.
-        </Callout>
+        <Callout type="insight">{t("pre.s1.insight")}</Callout>
       </Section>
 
-      <Section stepNum={2} title="Model architecture: LLaMA-style Transformer">
-        <p className="prose-custom text-base">
-          The model uses a <strong>decoder-only Transformer</strong> with modern
-          improvements over the original 2017 architecture: RMSNorm instead of LayerNorm,
-          SwiGLU activation, Rotary Position Embeddings (RoPE), and Grouped Query
-          Attention (GQA).
-        </p>
+      <Section stepNum={2} title={t("pre.s2.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("pre.s2.p1") }} />
 
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
           {[
-            {
-              old: "LayerNorm",
-              new_: "RMSNorm",
-              reason: "Cheaper, same quality — removes mean subtraction step",
-              color: "#0ea5e9",
-            },
-            {
-              old: "Sinusoidal PE",
-              new_: "RoPE",
-              reason: "Relative positions via rotation — generalizes to longer contexts",
-              color: "#10b981",
-            },
-            {
-              old: "GELU",
-              new_: "SwiGLU",
-              reason: "SiLU × gate = smoother gradient, empirically better loss",
-              color: "#a855f7",
-            },
-            {
-              old: "MHA",
-              new_: "GQA",
-              reason: "Fewer KV heads → smaller KV cache → more tokens in memory",
-              color: "#f59e0b",
-            },
+            { old: "LayerNorm",     new_: "RMSNorm", reason: t("pre.s2.r1"), color: "#0ea5e9" },
+            { old: "Sinusoidal PE", new_: "RoPE",    reason: t("pre.s2.r2"), color: "#10b981" },
+            { old: "GELU",         new_: "SwiGLU",  reason: t("pre.s2.r3"), color: "#a855f7" },
+            { old: "MHA",          new_: "GQA",     reason: t("pre.s2.r4"), color: "#f59e0b" },
           ].map((item) => (
             <div key={item.old} className="card-glass p-4" style={{ borderColor: `${item.color}20` }}>
               <div className="flex items-center gap-2 mb-2">
@@ -348,18 +314,12 @@ export function PretrainingPage() {
         />
 
         <Callout type="why">
-          <strong>Why no bias terms?</strong> Linear layers in modern LLMs are
-          typically bias-free. The bias saves ~0.1% parameters but adds noise to
-          the gradient and doesn't help. LLaMA, Mistral, Qwen all use <code>bias=False</code>.
+          <span dangerouslySetInnerHTML={{ __html: t("pre.s2.why") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={3} title="The training loop">
-        <p className="prose-custom text-base">
-          The training loop is the innermost hot path. Every line matters for
-          both correctness and performance. Here are the six key operations
-          in order: forward, loss, backward, grad clip, optimizer step, LR step.
-        </p>
+      <Section stepNum={3} title={t("pre.s3.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("pre.s3.p1") }} />
 
         <CodeBlock
           code={trainingLoopCode}
@@ -369,24 +329,16 @@ export function PretrainingPage() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <Callout type="tip">
-            <strong>BF16 vs FP16:</strong> Use BF16 (bfloat16) if your GPU supports it
-            (Ampere+). BF16 has the same exponent range as FP32 so it doesn't overflow;
-            FP16 requires loss scaling. BF16 is strictly better for LLM training.
+            <span dangerouslySetInnerHTML={{ __html: t("pre.s3.bf16") }} />
           </Callout>
           <Callout type="warning">
-            <strong>Gradient accumulation:</strong> If your batch doesn't fit in GPU
-            memory, accumulate gradients over N micro-batches before calling
-            <code>optimizer.step()</code>. Divide the loss by N before each backward.
+            <span dangerouslySetInnerHTML={{ __html: t("pre.s3.gradacc") }} />
           </Callout>
         </div>
       </Section>
 
-      <Section stepNum={4} title="Learning rate schedule">
-        <p className="prose-custom text-base">
-          The learning rate schedule is one of the most impactful hyperparameters.
-          Too high and training diverges. Too low and you waste compute. The standard
-          recipe for LLMs is: <strong>linear warmup → cosine decay → minimum LR</strong>.
-        </p>
+      <Section stepNum={4} title={t("pre.s4.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("pre.s4.p1") }} />
 
         <CodeBlock
           code={lrScheduleCode}
@@ -396,7 +348,7 @@ export function PretrainingPage() {
 
         {/* LR curve visualization */}
         <div className="card-glass p-5">
-          <div className="text-sm font-semibold text-white mb-3">Learning rate curve</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("pre.s4.lr.title")}</div>
           <svg viewBox="0 0 300 80" className="w-full h-24">
             <defs>
               <linearGradient id="lrGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -429,9 +381,9 @@ export function PretrainingPage() {
 
           <div className="grid grid-cols-3 gap-3 mt-2">
             {[
-              { key: "max_lr", val: "3e-4", note: "Peak LR" },
-              { key: "warmup", val: "2000 steps", note: "~0.1% of training" },
-              { key: "min_lr", val: "3e-5", note: "max_lr / 10" },
+              { key: "max_lr", val: "3e-4", note: t("pre.s4.lr.maxN") },
+              { key: "warmup", val: "2000 steps", note: t("pre.s4.lr.warmupN") },
+              { key: "min_lr", val: "3e-5", note: t("pre.s4.lr.minN") },
             ].map((item) => (
               <div key={item.key} className="text-center">
                 <div className="font-mono text-xs text-brand-400">{item.val}</div>
@@ -442,12 +394,8 @@ export function PretrainingPage() {
         </div>
       </Section>
 
-      <Section stepNum={5} title="Checkpointing and resumability">
-        <p className="prose-custom text-base">
-          Pre-training runs for days or weeks. You <em>will</em> have hardware failures,
-          preemptions, and experiments that need to be resumed. Save everything you need
-          to resume exactly where you left off.
-        </p>
+      <Section stepNum={5} title={t("pre.s5.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("pre.s5.p1") }} />
 
         <CodeBlock
           code={checkpointCode}
@@ -456,17 +404,14 @@ export function PretrainingPage() {
         />
 
         <Callout type="warning">
-          Save <strong>optimizer state</strong>, not just model weights. AdamW's moment
-          estimates (m, v) accumulate knowledge about the gradient history. Restoring
-          only weights means the optimizer restarts cold — you'll see a temporary loss spike
-          and 500-1000 steps of wasted compute.
+          <span dangerouslySetInnerHTML={{ __html: t("pre.s5.warning") }} />
         </Callout>
 
         <div className="grid sm:grid-cols-3 gap-4">
           {[
-            { key: "Save frequency", val: "Every 1k steps", note: "balance overhead vs recovery cost" },
-            { key: "Keep N ckpts", val: "Last 3–5", note: "delete old ones to save disk" },
-            { key: "Upload to", val: "ModelScope / S3", note: "for cross-machine resume" },
+            { key: t("pre.s5.stat1.k"), val: t("pre.s5.stat1.v"), note: t("pre.s5.stat1.n") },
+            { key: t("pre.s5.stat2.k"), val: t("pre.s5.stat2.v"), note: t("pre.s5.stat2.n") },
+            { key: t("pre.s5.stat3.k"), val: t("pre.s5.stat3.v"), note: t("pre.s5.stat3.n") },
           ].map((item) => (
             <div key={item.key} className="card-glass p-4">
               <div className="text-xs text-gray-500 mb-1">{item.key}</div>
@@ -477,11 +422,8 @@ export function PretrainingPage() {
         </div>
       </Section>
 
-      <Section stepNum={6} title="Run pre-training">
-        <p className="prose-custom text-base">
-          With data prepared (Chapter 01) and tokenizer trained (Chapter 02),
-          you're ready to launch pre-training:
-        </p>
+      <Section stepNum={6} title={t("pre.s6.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("pre.s6.p1") }} />
 
         <CodeBlock
           language="bash"
@@ -512,25 +454,17 @@ export function PretrainingPage() {
         />
 
         <Callout type="insight">
-          A <strong>760M parameter model</strong> trained on 15B tokens (the Chinchilla
-          optimal point for this size) takes roughly 3 days on 8× A100-80GB GPUs.
-          The loss should drop from ~10 (random) to ~2.3–2.5 (competent English text
-          generation) over this run.
+          <span dangerouslySetInnerHTML={{ __html: t("pre.s6.insight") }} />
         </Callout>
 
         <div className="card-glass p-5 gradient-border">
-          <div className="text-sm font-semibold text-white mb-3">Chinchilla scaling law</div>
-          <p className="text-sm text-gray-400 leading-relaxed mb-3">
-            The Chinchilla paper (Hoffmann et al., 2022) showed that the optimal
-            compute allocation trains a smaller model on more data: roughly{" "}
-            <strong className="text-white">20 tokens per parameter</strong>. 760M params
-            → 15B tokens is Chinchilla-optimal.
-          </p>
+          <div className="text-sm font-semibold text-white mb-3">{t("pre.s6.chinchilla.title")}</div>
+          <p className="text-sm text-gray-400 leading-relaxed mb-3" dangerouslySetInnerHTML={{ __html: t("pre.s6.chinchilla.desc") }} />
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Model params", val: "760M" },
-              { label: "Optimal tokens", val: "15B" },
-              { label: "Ratio", val: "20×" },
+              { label: t("pre.s6.chinchilla.params"), val: "760M" },
+              { label: t("pre.s6.chinchilla.tokens"), val: "15B" },
+              { label: t("pre.s6.chinchilla.ratio"),  val: "20×" },
             ].map((item) => (
               <div key={item.label} className="text-center">
                 <div className="text-xl font-bold gradient-text">{item.val}</div>

@@ -3,6 +3,7 @@ import { Section } from "../components/Section";
 import { CodeBlock } from "../components/CodeBlock";
 import { Callout } from "../components/Callout";
 import { PerplexityAnim } from "../components/animations/PerplexityAnim";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const perplexityCode = `# unbox_platform/eval/perplexity.py
 @torch.no_grad()
@@ -255,59 +256,45 @@ output = model.generate(
 `;
 
 export function EvalPage() {
+  const { t } = useLanguage();
   return (
     <ChapterLayout
       num="04"
-      title="Evaluation"
-      subtitle="After pretraining you have a model — but is it any good? Evaluation tells you where you are before committing to expensive fine-tuning runs."
+      title={t("ch04.title")}
+      subtitle={t("eval.subtitle")}
       color="text-violet-400"
-      prev={{ path: "/pretraining", label: "Pre-training" }}
-      next={{ path: "/sft", label: "SFT" }}
+      prev={{ path: "/pretraining", label: t("ch03.title") }}
+      next={{ path: "/sft", label: t("ch05.title") }}
     >
       <PerplexityAnim />
 
-      <Section stepNum={1} title="Why evaluate before fine-tuning?">
-        <p className="prose-custom text-base">
-          Pretraining is expensive. Before you spend more compute on SFT or DPO,
-          you need to know two things: does the model have coherent language
-          understanding (perplexity), and does it produce reasonable text
-          (qualitative sampling)? These checks take minutes and can save you
-          from wasting days fine-tuning a broken base model.
-        </p>
+      <Section stepNum={1} title={t("eval.s1.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("eval.s1.p1") }} />
 
         <div className="grid sm:grid-cols-3 gap-4">
           {[
-            { tool: "eval/perplexity.py", when: "After pretraining", desc: "Measures how surprised the model is by held-out text. Lower = better language model.", color: "#0ea5e9" },
-            { tool: "eval/sample.py", when: "After pretraining", desc: "Generates text from the base model. Checks coherence before any instruction tuning.", color: "#a855f7" },
-            { tool: "eval/chat_sample.py", when: "After SFT", desc: "Chat-format generation from an SFT checkpoint loaded via the HF adapter.", color: "#10b981" },
+            { tool: t("eval.s1.tool1.tool"), when: t("eval.s1.tool1.when"), desc: t("eval.s1.tool1.desc"), color: "#0ea5e9" },
+            { tool: t("eval.s1.tool2.tool"), when: t("eval.s1.tool2.when"), desc: t("eval.s1.tool2.desc"), color: "#a855f7" },
+            { tool: t("eval.s1.tool3.tool"), when: t("eval.s1.tool3.when"), desc: t("eval.s1.tool3.desc"), color: "#10b981" },
           ].map((item) => (
             <div key={item.tool} className="card-glass p-4" style={{ borderColor: `${item.color}20` }}>
               <div className="font-mono text-xs mb-1" style={{ color: item.color }}>{item.tool}</div>
-              <div className="text-xs text-gray-500 mb-2">Run: {item.when}</div>
+              <div className="text-xs text-gray-500 mb-2">{t("eval.s1.runLabel")} {item.when}</div>
               <p className="text-xs text-gray-400">{item.desc}</p>
             </div>
           ))}
         </div>
 
         <Callout type="why">
-          Evaluation is not just a final step — it's a <strong>feedback loop</strong>.
-          Run perplexity every N thousand training steps to confirm loss is
-          decreasing on held-out data and you haven't overfit. A diverging eval loss
-          while training loss keeps dropping is the clearest overfitting signal.
+          <span dangerouslySetInnerHTML={{ __html: t("eval.s1.why") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={2} title="Perplexity: the standard language model metric">
-        <p className="prose-custom text-base">
-          Perplexity is <strong>e^(average cross-entropy loss)</strong> on held-out text.
-          Intuitively: if the model assigns a perplexity of 20, it's as uncertain as
-          choosing uniformly among 20 options at every token. Lower is better.
-          A random model over a 32k vocabulary has perplexity ≈ 32,000.
-          A well-trained 760M model should reach ~15–20 on FineWeb-Edu eval text.
-        </p>
+      <Section stepNum={2} title={t("eval.s2.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("eval.s2.p1") }} />
 
         <div className="card-glass p-5 mb-2">
-          <div className="text-sm font-semibold text-white mb-3">The formula</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("eval.s2.formula.title")}</div>
           <div className="font-mono text-sm text-center py-3">
             <span className="text-brand-300">PPL</span>
             <span className="text-gray-400"> = </span>
@@ -318,16 +305,11 @@ export function EvalPage() {
             <span className="text-emerald-400">log P(xᵢ | x₁…xᵢ₋₁)</span>
             <span className="text-gray-400">)</span>
           </div>
-          <p className="text-xs text-gray-500 text-center mt-2">
-            N = total tokens evaluated; the exponent is the average negative log-likelihood (= cross-entropy loss)
-          </p>
+          <p className="text-xs text-gray-500 text-center mt-2">{t("eval.s2.formula.note")}</p>
         </div>
 
         <Callout type="warning">
-          <strong>Don't average the per-batch losses directly.</strong> Each batch has
-          a different number of non-padding tokens. You must recover the token-level
-          sum (<code>loss × n_tokens</code>), accumulate globally, then divide by total
-          tokens. Averaging averages gives a biased estimate.
+          <span dangerouslySetInnerHTML={{ __html: t("eval.s2.warning") }} />
         </Callout>
 
         <CodeBlock
@@ -337,19 +319,14 @@ export function EvalPage() {
         />
       </Section>
 
-      <Section stepNum={3} title="Sampling strategies: temperature, top-k, top-p">
-        <p className="prose-custom text-base">
-          At each generation step, the model outputs a logit vector over the full
-          vocabulary. Sampling is how you convert those logits into a single token.
-          The three knobs — temperature, top-k, and top-p — control the creativity
-          vs. coherence tradeoff.
-        </p>
+      <Section stepNum={3} title={t("eval.s3.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("eval.s3.p1") }} />
 
         <div className="grid sm:grid-cols-3 gap-4 mb-4">
           {[
-            { name: "Temperature τ", formula: "softmax(logits / τ)", low: "τ→0: greedy, repetitive", high: "τ→∞: uniform noise", sweet: "τ = 0.7–0.9", color: "#f59e0b" },
-            { name: "Top-k", formula: "keep k highest logits", low: "k=1: greedy", high: "k=vocab_size: none", sweet: "k = 40–100", color: "#0ea5e9" },
-            { name: "Top-p (nucleus)", formula: "keep smallest set ≥ p", low: "p→0: greedy", high: "p=1.0: none", sweet: "p = 0.9–0.95", color: "#10b981" },
+            { name: t("eval.s3.p1m1.name"), formula: t("eval.s3.p1m1.formula"), low: t("eval.s3.p1m1.low"), high: t("eval.s3.p1m1.high"), sweet: t("eval.s3.p1m1.sweet"), color: "#f59e0b" },
+            { name: t("eval.s3.p1m2.name"), formula: t("eval.s3.p1m2.formula"), low: t("eval.s3.p1m2.low"), high: t("eval.s3.p1m2.high"), sweet: t("eval.s3.p1m2.sweet"), color: "#0ea5e9" },
+            { name: t("eval.s3.p1m3.name"), formula: t("eval.s3.p1m3.formula"), low: t("eval.s3.p1m3.low"), high: t("eval.s3.p1m3.high"), sweet: t("eval.s3.p1m3.sweet"), color: "#10b981" },
           ].map((item) => (
             <div key={item.name} className="card-glass p-4" style={{ borderColor: `${item.color}20` }}>
               <div className="font-semibold text-sm mb-1" style={{ color: item.color }}>{item.name}</div>
@@ -357,7 +334,7 @@ export function EvalPage() {
               <div className="text-xs text-gray-400 space-y-0.5">
                 <div>{item.low}</div>
                 <div>{item.high}</div>
-                <div className="text-white font-medium mt-1">Sweet spot: {item.sweet}</div>
+                <div className="text-white font-medium mt-1">{t("eval.s3.sweet")} {item.sweet}</div>
               </div>
             </div>
           ))}
@@ -376,29 +353,16 @@ export function EvalPage() {
         />
       </Section>
 
-      <Section stepNum={4} title="Chat sampling from an SFT checkpoint">
-        <p className="prose-custom text-base">
-          After SFT (Chapter 05), the checkpoint is saved in HuggingFace format via
-          <code>UnboxForCausalLM</code>. Evaluation looks different: you load with
-          <code>from_pretrained</code>, apply a chat template, and call HF's{" "}
-          <code>model.generate()</code> — not the raw Transformer's.
-        </p>
-        <p className="prose-custom text-base">
-          Two non-obvious pitfalls trip up most people the first time:
-        </p>
+      <Section stepNum={4} title={t("eval.s4.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("eval.s4.p1") }} />
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("eval.s4.p2") }} />
 
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
           <Callout type="warning" title="Pitfall 1: add_special_tokens=False">
-            When tokenizing chat-template output, always pass{" "}
-            <code>add_special_tokens=False</code>. The template already includes all
-            special tokens. Without this, a spurious <code>&lt;|eos|&gt;</code> is appended
-            and the model generates a fake next-user-turn instead of your answer.
+            <span dangerouslySetInnerHTML={{ __html: t("eval.s4.pitfall1") }} />
           </Callout>
           <Callout type="warning" title="Pitfall 2: use_cache=False">
-            <code>UnboxForCausalLM</code> doesn't implement the KV cache yet. If you
-            call <code>generate(use_cache=True)</code> (the HF default), HF passes only
-            the last token on step 2+, destroying all context and producing garbage.
-            Always pass <code>use_cache=False</code>.
+            <span dangerouslySetInnerHTML={{ __html: t("eval.s4.pitfall2") }} />
           </Callout>
         </div>
 
@@ -409,20 +373,15 @@ export function EvalPage() {
         />
       </Section>
 
-      <Section stepNum={5} title="DPO evaluation: win rate and log-prob margin">
-        <p className="prose-custom text-base">
-          Before running DPO (Chapter 06), establish a baseline by measuring how often
-          the SFT model already prefers the "chosen" response over the "rejected" one.
-          A well-calibrated SFT model should already win ~55–65% of pairs; DPO should
-          push this to ~70–80%.
-        </p>
+      <Section stepNum={5} title={t("eval.s5.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("eval.s5.p1") }} />
 
         <div className="card-glass p-5 mb-4">
-          <div className="text-sm font-semibold text-white mb-3">Two metrics</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("eval.s5.metricsTitle")}</div>
           <div className="space-y-3">
             {[
-              { metric: "Win rate", formula: "fraction where log P(chosen) > log P(rejected)", baseline: "~50% = random, ~58–65% = SFT, ~73%+ = good DPO", color: "#10b981" },
-              { metric: "Margin", formula: "mean( log P(chosen) − log P(rejected) ) per token", baseline: "positive = model prefers chosen; larger = stronger preference", color: "#0ea5e9" },
+              { metric: t("eval.s5.m1.m"), formula: t("eval.s5.m1.formula"), baseline: t("eval.s5.m1.baseline"), color: "#10b981" },
+              { metric: t("eval.s5.m2.m"), formula: t("eval.s5.m2.formula"), baseline: t("eval.s5.m2.baseline"), color: "#0ea5e9" },
             ].map((item) => (
               <div key={item.metric} className="flex gap-3">
                 <div className="w-2 rounded-full flex-shrink-0 mt-1" style={{ background: item.color, minHeight: 40 }} />
@@ -443,13 +402,11 @@ export function EvalPage() {
         />
 
         <Callout type="insight">
-          Use <strong>per-token</strong> log-probability (mean loss, not sum) when comparing
-          responses. A long correct answer would always win over a short one if you used
-          the total log-prob — the length bias would dominate the quality signal.
+          <span dangerouslySetInnerHTML={{ __html: t("eval.s5.insight") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={6} title="Run it">
+      <Section stepNum={6} title={t("eval.s6.title")}>
         <CodeBlock
           language="bash"
           code={runEvalCode}
@@ -457,9 +414,7 @@ export function EvalPage() {
         />
 
         <Callout type="tip">
-          Add <code>--max-batches 200</code> to perplexity for a quick smoke test
-          (~2 min on CPU). Remove it for the full eval (~20 min on GPU).
-          The estimate from 200 batches is within 0.3 PPL of the full eval in practice.
+          <span dangerouslySetInnerHTML={{ __html: t("eval.s6.tip") }} />
         </Callout>
       </Section>
     </ChapterLayout>

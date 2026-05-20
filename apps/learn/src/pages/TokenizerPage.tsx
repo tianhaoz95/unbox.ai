@@ -4,6 +4,7 @@ import { CodeBlock } from "../components/CodeBlock";
 import { Callout } from "../components/Callout";
 import { TokenizerAnim } from "../components/animations/TokenizerAnim";
 import { BPEAnim } from "../components/animations/BPEAnim";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const bpeTrainCode = `# unbox_platform/tokenizer/train.py
 from tokenizers import Tokenizer
@@ -155,14 +156,26 @@ const vocabSizeTable = [
 ];
 
 export function TokenizerPage() {
+  const { t } = useLanguage();
+
+  const bpeItems = [t("tok.s2.bpe.i1"), t("tok.s2.bpe.i2"), t("tok.s2.bpe.i3"), t("tok.s2.bpe.i4")];
+  const spItems  = [t("tok.s2.sp.i1"),  t("tok.s2.sp.i2"),  t("tok.s2.sp.i3"),  t("tok.s2.sp.i4")];
+
+  const qaCards = [
+    { q: t("tok.s5.q1.q"), a: t("tok.s5.q1.a"), color: "#0ea5e9" },
+    { q: t("tok.s5.q2.q"), a: t("tok.s5.q2.a"), color: "#a855f7" },
+    { q: t("tok.s5.q3.q"), a: t("tok.s5.q3.a"), color: "#10b981" },
+    { q: t("tok.s5.q4.q"), a: t("tok.s5.q4.a"), color: "#f59e0b" },
+  ];
+
   return (
     <ChapterLayout
       num="02"
-      title="Tokenizer"
-      subtitle="Text is a string. Models need integers. The tokenizer is the bridge — and its design cascades through every downstream decision."
+      title={t("ch02.title")}
+      subtitle={t("tok.subtitle")}
       color="text-emerald-400"
-      prev={{ path: "/data", label: "Data Pipeline" }}
-      next={{ path: "/pretraining", label: "Pre-training" }}
+      prev={{ path: "/data", label: t("ch01.title") }}
+      next={{ path: "/pretraining", label: t("ch03.title") }}
     >
       {/* Live demo */}
       <div className="grid sm:grid-cols-2 gap-4">
@@ -170,31 +183,19 @@ export function TokenizerPage() {
         <BPEAnim />
       </div>
 
-      <Section stepNum={1} title="What is a tokenizer?">
-        <p className="prose-custom text-base">
-          A tokenizer splits text into <strong>tokens</strong> — discrete units that
-          map to integers from a fixed vocabulary. The model never sees characters or
-          bytes directly; it operates entirely on token IDs.
-        </p>
-
-        <p className="prose-custom text-base">
-          The vocabulary is learned from training data. Common subwords get their own
-          ID; rare words are split into multiple tokens. "tokenization" might become
-          <code>["token", "ization"]</code>. "ChatGPT" might be{" "}
-          <code>["Chat", "G", "PT"]</code>.
-        </p>
+      <Section stepNum={1} title={t("tok.s1.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("tok.s1.p1") }} />
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("tok.s1.p2") }} />
 
         <div className="card-glass p-5">
-          <div className="text-sm font-semibold text-white mb-3">
-            Industry vocabulary sizes
-          </div>
+          <div className="text-sm font-semibold text-white mb-3">{t("tok.s1.table.title")}</div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="text-left py-2 text-gray-500 font-medium">Model</th>
-                  <th className="text-left py-2 text-gray-500 font-medium">Vocab size</th>
-                  <th className="text-left py-2 text-gray-500 font-medium hidden sm:table-cell">Notes</th>
+                  <th className="text-left py-2 text-gray-500 font-medium">{t("tok.s1.table.model")}</th>
+                  <th className="text-left py-2 text-gray-500 font-medium">{t("tok.s1.table.vocab")}</th>
+                  <th className="text-left py-2 text-gray-500 font-medium hidden sm:table-cell">{t("tok.s1.table.notes")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,19 +212,12 @@ export function TokenizerPage() {
         </div>
 
         <Callout type="why">
-          <strong>Why not just split on words or characters?</strong> Word-level
-          vocabularies explode in size (millions of words, OOV problem). Character-level
-          vocabularies are tiny but sequences become very long — 4× longer than BPE,
-          meaning 4× more attention operations. BPE finds the sweet spot.
+          <span dangerouslySetInnerHTML={{ __html: t("tok.s1.why") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={2} title="The BPE algorithm">
-        <p className="prose-custom text-base">
-          Byte Pair Encoding (BPE) builds a vocabulary by starting with individual
-          characters and iteratively merging the <strong>most frequent adjacent pair</strong>.
-          After N merges, you have a vocabulary of N + (initial alphabet size) tokens.
-        </p>
+      <Section stepNum={2} title={t("tok.s2.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("tok.s2.p1") }} />
 
         <CodeBlock
           code={bpeAlgorithmCode}
@@ -232,53 +226,19 @@ export function TokenizerPage() {
         />
 
         <Callout type="insight">
-          The merge order matters and is deterministic given the corpus. When you
-          save a tokenizer, you're saving the ordered list of merges. At inference
-          time, you apply those same merges greedily to encode new text. This is why
-          tokenizers are <strong>corpus-specific</strong> — a tokenizer trained on
-          English code will be inefficient for Japanese text.
+          <span dangerouslySetInnerHTML={{ __html: t("tok.s2.insight") }} />
         </Callout>
 
         <div className="grid sm:grid-cols-2 gap-4">
           {[
-            {
-              title: "BPE strengths",
-              color: "#10b981",
-              items: [
-                "Language-agnostic at byte level",
-                "Handles any Unicode gracefully",
-                "Vocabulary is interpretable",
-                "Fast encoding (O(n log n))",
-              ],
-            },
-            {
-              title: "SentencePiece differences",
-              color: "#0ea5e9",
-              items: [
-                "Works on raw text (no pre-tokenization)",
-                "Handles spaces as explicit tokens",
-                "Unigram Language Model variant",
-                "Used by LLaMA, T5, ALBERT",
-              ],
-            },
+            { title: t("tok.s2.bpe.title"), color: "#10b981", items: bpeItems },
+            { title: t("tok.s2.sp.title"),  color: "#0ea5e9", items: spItems  },
           ].map((card) => (
-            <div
-              key={card.title}
-              className="card-glass p-4"
-              style={{ borderColor: `${card.color}20` }}
-            >
-              <h4
-                className="font-semibold text-sm mb-3"
-                style={{ color: card.color }}
-              >
-                {card.title}
-              </h4>
+            <div key={card.title} className="card-glass p-4" style={{ borderColor: `${card.color}20` }}>
+              <h4 className="font-semibold text-sm mb-3" style={{ color: card.color }}>{card.title}</h4>
               <ul className="space-y-1.5">
                 {card.items.map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-center gap-2 text-sm text-gray-400"
-                  >
+                  <li key={item} className="flex items-center gap-2 text-sm text-gray-400">
                     <span style={{ color: card.color }}>→</span>
                     {item}
                   </li>
@@ -289,11 +249,8 @@ export function TokenizerPage() {
         </div>
       </Section>
 
-      <Section stepNum={3} title="Train your tokenizer">
-        <p className="prose-custom text-base">
-          We use the HuggingFace <code>tokenizers</code> library — it's written in Rust
-          and trains a 32k vocab tokenizer in under 2 minutes on 10GB of text.
-        </p>
+      <Section stepNum={3} title={t("tok.s3.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("tok.s3.p1") }} />
 
         <CodeBlock
           code={bpeTrainCode}
@@ -302,10 +259,7 @@ export function TokenizerPage() {
         />
 
         <Callout type="warning">
-          Train the tokenizer <strong>before</strong> tokenizing your data (Chapter 01).
-          The tokenizer is a prerequisite for the data pipeline. In practice, you train
-          the tokenizer on a representative sample (e.g. 1B tokens), then tokenize the
-          full dataset with the resulting vocabulary.
+          <span dangerouslySetInnerHTML={{ __html: t("tok.s3.warning") }} />
         </Callout>
 
         <CodeBlock
@@ -333,13 +287,8 @@ print(t.decode([15496, 995]))       # 'Hello world'
         />
       </Section>
 
-      <Section stepNum={4} title="Using the tokenizer at inference">
-        <p className="prose-custom text-base">
-          During inference, the tokenizer has an extra responsibility: incremental
-          streaming decode. The model generates one token at a time, but we can't always
-          decode a single token to a character — some characters span multiple tokens in
-          multi-byte UTF-8 encoding.
-        </p>
+      <Section stepNum={4} title={t("tok.s4.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("tok.s4.p1") }} />
 
         <CodeBlock
           code={inferenceCode}
@@ -348,49 +297,16 @@ print(t.decode([15496, 995]))       # 'Hello world'
         />
 
         <Callout type="insight">
-          This is why streaming LLM outputs sometimes have a short delay before the
-          first characters appear — the server is buffering tokens until it can confirm
-          a complete UTF-8 sequence. The same issue occurs with special characters in
-          Chinese, Arabic, emoji, etc.
+          {t("tok.s4.insight")}
         </Callout>
       </Section>
 
-      <Section stepNum={5} title="Key design decisions">
+      <Section stepNum={5} title={t("tok.s5.title")}>
         <div className="grid sm:grid-cols-2 gap-4">
-          {[
-            {
-              question: "Vocab size: 32k vs 128k?",
-              answer:
-                "32k is the LLaMA 2 sweet spot. 128k (LLaMA 3) trades a larger embedding table for shorter sequences in multilingual settings. For English-only research, 32k is more parameter-efficient.",
-              color: "#0ea5e9",
-            },
-            {
-              question: "Add domain tokens?",
-              answer:
-                'Yes if you have domain-specific strings that fragment badly — e.g., "<|endoftext|>", code keywords, or math notation. Add them as special tokens before training.',
-              color: "#a855f7",
-            },
-            {
-              question: "Case sensitivity?",
-              answer:
-                "Keep it. Lowercasing loses information the model can learn from. BPE naturally handles case variants as separate tokens ('The' vs 'the'), and the model learns they're related.",
-              color: "#10b981",
-            },
-            {
-              question: "Re-use a pretrained tokenizer?",
-              answer:
-                "Absolutely fine for research. Using LLaMA's tokenizer saves you the training step and ensures compatibility with pretrained weights for fine-tuning experiments.",
-              color: "#f59e0b",
-            },
-          ].map((item) => (
-            <div key={item.question} className="card-glass p-4">
-              <div
-                className="text-sm font-semibold mb-2"
-                style={{ color: item.color }}
-              >
-                {item.question}
-              </div>
-              <p className="text-sm text-gray-400 leading-relaxed">{item.answer}</p>
+          {qaCards.map((item) => (
+            <div key={item.q} className="card-glass p-4">
+              <div className="text-sm font-semibold mb-2" style={{ color: item.color }}>{item.q}</div>
+              <p className="text-sm text-gray-400 leading-relaxed">{item.a}</p>
             </div>
           ))}
         </div>

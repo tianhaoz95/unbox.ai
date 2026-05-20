@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquarePlus, X, Send, LogIn } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import type { Comment } from "../hooks/useComments";
 
 interface SelectionState {
@@ -105,6 +106,7 @@ export function SelectionCommentLayer({
   onRequestSignIn,
 }: Props) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<SelectionState | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -204,7 +206,7 @@ export function SelectionCommentLayer({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold shadow-lg transition-colors"
             >
               <MessageSquarePlus size={13} />
-              Comment
+              {t("comments.button")}
             </button>
           </motion.div>
         )}
@@ -271,7 +273,7 @@ export function SelectionCommentLayer({
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-colors"
                     >
                       <Send size={12} />
-                      {submitting ? "Sending…" : "Send"}
+                      {submitting ? "…" : t("comments.send")}
                     </button>
                   </div>
                 </div>
@@ -279,7 +281,7 @@ export function SelectionCommentLayer({
             ) : (
               <div className="text-center py-2">
                 <p className="text-sm text-gray-400 mb-3">
-                  Sign in to leave a comment
+                  {t("comments.signIn")}
                 </p>
                 <button
                   onClick={() => {
@@ -289,13 +291,13 @@ export function SelectionCommentLayer({
                   className="flex items-center gap-2 mx-auto px-4 py-2 rounded-xl bg-white text-gray-900 text-sm font-semibold hover:bg-gray-100 transition-colors"
                 >
                   <LogIn size={14} />
-                  Sign in with Google
+                  {t("auth.google")}
                 </button>
                 <button
                   onClick={dismiss}
                   className="mt-2 text-xs text-gray-600 hover:text-gray-400"
                 >
-                  Cancel
+                  {t("comments.cancel")}
                 </button>
               </div>
             )}

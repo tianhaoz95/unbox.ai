@@ -3,6 +3,7 @@ import { Section } from "../components/Section";
 import { CodeBlock } from "../components/CodeBlock";
 import { Callout } from "../components/Callout";
 import { DPOAnim } from "../components/animations/DPOAnim";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const dpoIntuitionCode = `# The DPO objective — intuition in code
 # For each (prompt, chosen, rejected) triple:
@@ -148,65 +149,47 @@ cat reports/dpo_experiment.md
 `;
 
 export function DPOPage() {
+  const { t } = useLanguage();
   return (
     <ChapterLayout
       num="06"
-      title="DPO"
-      subtitle="Direct Preference Optimization aligns the model with human preferences using pairs of chosen and rejected responses — no reward model required."
+      title={t("ch06.title")}
+      subtitle={t("dpo.subtitle")}
       color="text-pink-400"
-      prev={{ path: "/sft", label: "SFT" }}
-      next={{ path: "/inference", label: "Inference (coming soon)" }}
+      prev={{ path: "/sft", label: t("ch05.title") }}
+      next={{ path: "/inference", label: t("ch07.title") }}
     >
       <DPOAnim />
 
-      <Section stepNum={1} title="Why not RLHF?">
-        <p className="prose-custom text-base">
-          Classic RLHF (Reinforcement Learning from Human Feedback) requires three
-          separate stages: (1) train a reward model from preference pairs, (2) run
-          PPO to optimize the policy against the reward model, (3) maintain a KL
-          penalty to prevent the model from gaming the reward. Each stage has its
-          own hyperparameters and failure modes.
-        </p>
-        <p className="prose-custom text-base">
-          <strong>DPO</strong> (Rafailov et al., 2023) eliminates the reward model
-          entirely. It shows that the optimal RLHF policy can be expressed as a
-          closed-form update directly on the preference pairs — making the problem
-          a supervised binary classification task.
-        </p>
+      <Section stepNum={1} title={t("dpo.s1.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("dpo.s1.p1") }} />
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("dpo.s1.p2") }} />
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="card-glass p-4 border border-red-500/15">
-            <div className="text-sm font-semibold text-red-400 mb-2">RLHF (PPO)</div>
+            <div className="text-sm font-semibold text-red-400 mb-2">{t("dpo.s1.rlhf.title")}</div>
             <ul className="space-y-1 text-xs text-gray-400">
-              <li>→ Train a separate reward model</li>
-              <li>→ Run PPO (complex, unstable)</li>
-              <li>→ Tune KL coefficient carefully</li>
-              <li>→ Monitor reward hacking</li>
-              <li>→ Needs online rollouts (expensive)</li>
+              {[t("dpo.s1.rlhf.i1"), t("dpo.s1.rlhf.i2"), t("dpo.s1.rlhf.i3"), t("dpo.s1.rlhf.i4"), t("dpo.s1.rlhf.i5")].map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ul>
           </div>
           <div className="card-glass p-4 border border-emerald-500/15">
-            <div className="text-sm font-semibold text-emerald-400 mb-2">DPO</div>
+            <div className="text-sm font-semibold text-emerald-400 mb-2">{t("dpo.s1.dpo.title")}</div>
             <ul className="space-y-1 text-xs text-gray-400">
-              <li>✓ No reward model needed</li>
-              <li>✓ Simple binary cross-entropy loss</li>
-              <li>✓ Stable training (like SFT)</li>
-              <li>✓ One β hyperparameter</li>
-              <li>✓ Offline (uses stored preferences)</li>
+              {[t("dpo.s1.dpo.i1"), t("dpo.s1.dpo.i2"), t("dpo.s1.dpo.i3"), t("dpo.s1.dpo.i4"), t("dpo.s1.dpo.i5")].map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ul>
           </div>
         </div>
       </Section>
 
-      <Section stepNum={2} title="The DPO loss: intuition">
-        <p className="prose-custom text-base">
-          DPO derives from a reparameterization of the RLHF objective. The key insight
-          is that any optimal RLHF policy can be written in terms of the reference
-          model's log-probabilities. This eliminates the reward model as a separate object.
-        </p>
+      <Section stepNum={2} title={t("dpo.s2.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("dpo.s2.p1") }} />
 
         <div className="card-glass p-5 mb-4">
-          <div className="text-sm font-semibold text-white mb-3">Implicit reward</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("dpo.s2.reward.title")}</div>
           <div className="font-mono text-sm text-center py-2 leading-loose">
             <span className="text-amber-400">r(x, y)</span>
             <span className="text-gray-400"> = β · (</span>
@@ -215,13 +198,11 @@ export function DPOPage() {
             <span className="text-gray-500">log π_ref(y|x)</span>
             <span className="text-gray-400">)</span>
           </div>
-          <p className="text-xs text-gray-500 text-center mt-2">
-            β controls how far the policy can diverge from the reference (KL penalty strength)
-          </p>
+          <p className="text-xs text-gray-500 text-center mt-2">{t("dpo.s2.reward.note")}</p>
         </div>
 
         <div className="card-glass p-5 mb-4">
-          <div className="text-sm font-semibold text-white mb-3">DPO loss</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("dpo.s2.loss.title")}</div>
           <div className="font-mono text-sm text-center py-2 leading-loose">
             <span className="text-amber-400">L_DPO</span>
             <span className="text-gray-400"> = −log σ(</span>
@@ -231,8 +212,8 @@ export function DPOPage() {
             <span className="text-gray-400">)</span>
           </div>
           <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-gray-500">
-            <div><span className="text-emerald-400">y_w</span> = chosen (preferred) response</div>
-            <div><span className="text-red-400">y_l</span> = rejected (dispreferred) response</div>
+            <div><span className="text-emerald-400">y_w</span> = {t("dpo.s2.loss.chosen")}</div>
+            <div><span className="text-red-400">y_l</span> = {t("dpo.s2.loss.rejected")}</div>
           </div>
         </div>
 
@@ -243,45 +224,31 @@ export function DPOPage() {
         />
 
         <Callout type="insight">
-          The reference model is a <strong>KL constraint</strong>, not a performance
-          baseline. It prevents the model from degenerate solutions like assigning all
-          probability mass to one-word responses ("Yes.") that technically win every
-          comparison but are useless in practice. Higher β = stay closer to the SFT
-          model; lower β = more aggressive preference learning.
+          <span dangerouslySetInnerHTML={{ __html: t("dpo.s2.insight") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={3} title="Dataset format: preference pairs">
-        <p className="prose-custom text-base">
-          DPO requires a dataset of <strong>(prompt, chosen, rejected)</strong> triples.
-          We use <code>HuggingFaceH4/ultrafeedback_binarized</code> — 60K examples
-          where GPT-4 rated responses from four different models and the best was
-          labeled "chosen", worst "rejected".
-        </p>
+      <Section stepNum={3} title={t("dpo.s3.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("dpo.s3.p1") }} />
 
         <div className="card-glass p-5 mb-4">
-          <div className="text-sm font-semibold text-white mb-3">Preference pair structure</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("dpo.s3.pair.title")}</div>
           <div className="space-y-3">
             {[
-              { label: "prompt", content: '[{"role": "user", "content": "Explain gradient descent."}]', color: "#6366f1" },
-              { label: "chosen", content: '[{"role": "user", ...}, {"role": "assistant", "content": "Gradient descent iteratively minimizes loss by..."}]', color: "#10b981" },
-              { label: "rejected", content: '[{"role": "user", ...}, {"role": "assistant", "content": "It makes the model learn better."}]', color: "#ef4444" },
+              { labelKey: "dpo.s3.pair.prompt", content: '[{"role": "user", "content": "Explain gradient descent."}]', color: "#6366f1" },
+              { labelKey: "dpo.s3.pair.chosen", content: '[{"role": "user", ...}, {"role": "assistant", "content": "Gradient descent iteratively minimizes loss by..."}]', color: "#10b981" },
+              { labelKey: "dpo.s3.pair.rejected", content: '[{"role": "user", ...}, {"role": "assistant", "content": "It makes the model learn better."}]', color: "#ef4444" },
             ].map((item) => (
-              <div key={item.label} className="rounded-lg p-3 border" style={{ background: `${item.color}08`, borderColor: `${item.color}25` }}>
-                <span className="text-xs font-mono font-semibold" style={{ color: item.color }}>{item.label}</span>
+              <div key={item.labelKey} className="rounded-lg p-3 border" style={{ background: `${item.color}08`, borderColor: `${item.color}25` }}>
+                <span className="text-xs font-mono font-semibold" style={{ color: item.color }}>{t(item.labelKey)}</span>
                 <p className="text-xs text-gray-400 font-mono mt-1 break-all">{item.content}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <Callout type="warning" title="Critical: drop the string 'prompt' column">
-          <code>ultrafeedback_binarized</code> has both a string <code>"prompt"</code>
-          column and list-format <code>"chosen"</code>/<code>"rejected"</code> columns.
-          TRL's <code>DPOTrainer</code> has two code paths depending on whether
-          a string <code>"prompt"</code> exists. Leaving it in causes shape mismatches
-          or silently wrong training targets. Always drop it and let TRL's{" "}
-          <code>extract_prompt()</code> derive the prompt from the shared prefix.
+        <Callout type="warning">
+          <span dangerouslySetInnerHTML={{ __html: t("dpo.s3.warning") }} />
         </Callout>
 
         <CodeBlock
@@ -291,7 +258,7 @@ export function DPOPage() {
         />
       </Section>
 
-      <Section stepNum={4} title="DPOTrainConfig and key hyperparameters">
+      <Section stepNum={4} title={t("dpo.s4.title")}>
         <CodeBlock
           code={dpoConfigCode}
           filename="unbox_platform/rl/dpo/train.py — DPOTrainConfig"
@@ -300,10 +267,10 @@ export function DPOPage() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           {[
-            { key: "β (beta)", val: "0.1", note: "Higher → stay closer to SFT. Too low → reward hack. Too high → no change.", color: "#f59e0b" },
-            { key: "learning_rate", val: "5e-7", note: "~40× lower than SFT. DPO is a small adjustment; large LR destroys the SFT alignment.", color: "#0ea5e9" },
-            { key: "loss_type", val: "sigmoid", note: "The original DPO paper. 'ipo' and 'hinge' are alternatives with different theoretical properties.", color: "#a855f7" },
-            { key: "num_epochs", val: "1–2", note: "Overfit risk is real — more epochs can degrade helpfulness even as win rate climbs.", color: "#10b981" },
+            { key: t("dpo.s4.p1m1.k"), val: "0.1",     note: t("dpo.s4.p1m1.n"), color: "#f59e0b" },
+            { key: t("dpo.s4.p1m2.k"), val: "5e-7",    note: t("dpo.s4.p1m2.n"), color: "#0ea5e9" },
+            { key: t("dpo.s4.p1m3.k"), val: "sigmoid", note: t("dpo.s4.p1m3.n"), color: "#a855f7" },
+            { key: t("dpo.s4.p1m4.k"), val: "1–2",     note: t("dpo.s4.p1m4.n"), color: "#10b981" },
           ].map((item) => (
             <div key={item.key} className="card-glass p-4" style={{ borderColor: `${item.color}20` }}>
               <div className="flex items-center justify-between mb-1.5">
@@ -316,14 +283,8 @@ export function DPOPage() {
         </div>
       </Section>
 
-      <Section stepNum={5} title="Training with DPOTrainer">
-        <p className="prose-custom text-base">
-          One critical detail: we load the reference model <strong>explicitly</strong>
-          from the same SFT checkpoint rather than letting TRL auto-create it.
-          TRL's auto-creation calls <code>AutoModelForCausalLM.from_pretrained()</code>
-          internally — which works fine for standard HF models but can miss our
-          custom class registration. Loading manually is more reliable.
-        </p>
+      <Section stepNum={5} title={t("dpo.s5.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("dpo.s5.p1") }} />
 
         <CodeBlock
           code={dpoTrainCode}
@@ -332,20 +293,12 @@ export function DPOPage() {
         />
 
         <Callout type="tip">
-          During DPO training, TRL logs <code>rewards/chosen</code> and{" "}
-          <code>rewards/rejected</code> per step. A healthy run shows the gap between
-          them widening over time — chosen rewards increasing and rejected rewards
-          decreasing relative to the reference. If both move together in the same
-          direction, β is too low or the LR is too high.
+          <span dangerouslySetInnerHTML={{ __html: t("dpo.s5.tip") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={6} title="Evaluate before and after">
-        <p className="prose-custom text-base">
-          Run <code>eval/dpo_eval.py</code> (Chapter 04) before and after training.
-          The report captures both the quantitative win-rate improvement and qualitative
-          response comparisons on the same fixed prompts, making the delta legible.
-        </p>
+      <Section stepNum={6} title={t("dpo.s6.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("dpo.s6.p1") }} />
 
         <CodeBlock
           language="bash"
@@ -354,14 +307,14 @@ export function DPOPage() {
         />
 
         <div className="card-glass p-5 gradient-border">
-          <div className="text-sm font-semibold text-white mb-3">Expected results</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("dpo.s6.results.title")}</div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="text-left py-2 text-gray-500 font-medium">Checkpoint</th>
-                  <th className="text-left py-2 text-gray-500 font-medium">Win rate</th>
-                  <th className="text-left py-2 text-gray-500 font-medium">Margin</th>
+                  <th className="text-left py-2 text-gray-500 font-medium">{t("dpo.s6.results.checkpoint")}</th>
+                  <th className="text-left py-2 text-gray-500 font-medium">{t("dpo.s6.results.winrate")}</th>
+                  <th className="text-left py-2 text-gray-500 font-medium">{t("dpo.s6.results.margin")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -378,17 +331,11 @@ export function DPOPage() {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Evaluated on 500 held-out pairs from <code>ultrafeedback_binarized/test_prefs</code>.
-            Actual numbers vary with training data and checkpoint quality.
-          </p>
+          <p className="text-xs text-gray-500 mt-3" dangerouslySetInnerHTML={{ __html: t("dpo.s6.results.note") }} />
         </div>
 
         <Callout type="insight">
-          Win rate can look good even when the model has gotten worse at helpfulness.
-          Always pair quantitative win-rate with qualitative sampling on your own
-          prompts. A model that learned to write very long, verbose responses can
-          achieve high win-rate by length bias alone.
+          <span dangerouslySetInnerHTML={{ __html: t("dpo.s6.insight") }} />
         </Callout>
       </Section>
     </ChapterLayout>

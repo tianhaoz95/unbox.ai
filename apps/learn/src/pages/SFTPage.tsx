@@ -2,6 +2,7 @@ import { ChapterLayout } from "../components/ChapterLayout";
 import { Section } from "../components/Section";
 import { CodeBlock } from "../components/CodeBlock";
 import { Callout } from "../components/Callout";
+import { useLanguage } from "../contexts/LanguageContext";
 import { ChatTemplateAnim } from "../components/animations/ChatTemplateAnim";
 
 const hfAdapterCode = `# unbox_platform/model/hf_adapter.py
@@ -205,35 +206,24 @@ const runSFTCode = `# Run SFT from a pretrain checkpoint
 `;
 
 export function SFTPage() {
+  const { t } = useLanguage();
   return (
     <ChapterLayout
       num="05"
-      title="Supervised Fine-Tuning"
-      subtitle="A pretrained base model predicts text. SFT turns it into an assistant that follows instructions. The key is the dataset format and how you compute the loss."
+      title={t("ch05.title")}
+      subtitle={t("sft.subtitle")}
       color="text-amber-400"
-      prev={{ path: "/eval", label: "Evaluation" }}
-      next={{ path: "/dpo", label: "DPO" }}
+      prev={{ path: "/eval", label: t("ch04.title") }}
+      next={{ path: "/dpo", label: t("ch06.title") }}
     >
       <ChatTemplateAnim />
 
-      <Section stepNum={1} title="The HuggingFace adapter: why it exists">
-        <p className="prose-custom text-base">
-          Our pretrained <code>Transformer</code> is a clean PyTorch module — but TRL's{" "}
-          <code>SFTTrainer</code> expects a HuggingFace <code>PreTrainedModel</code>.
-          The <code>UnboxForCausalLM</code> adapter bridges this gap: it wraps the
-          existing model with no architectural changes, just the HF interface layer.
-        </p>
-        <p className="prose-custom text-base">
-          This means we get TRL, PEFT/LoRA, and the HF ecosystem for free without
-          ever touching the core model code — exactly the separation of concerns
-          the architecture is designed for.
-        </p>
+      <Section stepNum={1} title={t("sft.s1.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("sft.s1.p1") }} />
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("sft.s1.p2") }} />
 
         <Callout type="insight">
-          <code>UnboxForCausalLM</code> inherits from both <code>PreTrainedModel</code>{" "}
-          and <code>GenerationMixin</code>. <code>GenerationMixin</code> provides
-          the full <code>model.generate()</code> loop — beam search, sampling, stopping
-          criteria — for free. We just need a correct <code>forward()</code>.
+          <span dangerouslySetInnerHTML={{ __html: t("sft.s1.insight") }} />
         </Callout>
 
         <CodeBlock
@@ -243,20 +233,12 @@ export function SFTPage() {
         />
 
         <Callout type="warning">
-          The adapter accepts <code>attention_mask</code> and <code>use_cache</code>
-          for HF API compatibility but neither is implemented. Always pass{" "}
-          <code>use_cache=False</code> to <code>generate()</code> — see Eval chapter
-          (Chapter 04) for the exact pitfall.
+          <span dangerouslySetInnerHTML={{ __html: t("sft.s1.warning") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={2} title="Chat templates: the message → token mapping">
-        <p className="prose-custom text-base">
-          SFT training data is a list of <code>{`{"role": ..., "content": ...}`}</code>
-          message dicts. A <strong>chat template</strong> converts this structure into
-          a flat string that the tokenizer can process. The most common format today is
-          ChatML, used by Qwen, Mistral-Instruct, and many others.
-        </p>
+      <Section stepNum={2} title={t("sft.s2.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("sft.s2.p1") }} />
 
         <CodeBlock
           code={datasetFormatCode}
@@ -265,7 +247,7 @@ export function SFTPage() {
         />
 
         <div className="card-glass p-5">
-          <div className="text-sm font-semibold text-white mb-3">ChatML format</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("sft.s2.chatml.title")}</div>
           <div className="font-mono text-xs leading-loose text-gray-300 bg-surface-700/50 rounded-lg p-3">
             <span className="text-indigo-400">{"<|im_start|>system\n"}</span>
             <span className="text-gray-500">{"You are a helpful assistant.<|im_end|>\n"}</span>
@@ -276,26 +258,18 @@ export function SFTPage() {
             <span className="text-gray-500">{"<|im_end|>"}</span>
           </div>
           <div className="flex gap-4 mt-3 text-xs text-gray-500">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500/70 inline-block" /> masked (labels = -100)</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500/70 inline-block" /> loss computed</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500/70 inline-block" /> {t("sft.s2.chatml.masked")}</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500/70 inline-block" /> {t("sft.s2.chatml.loss")}</span>
           </div>
         </div>
 
         <Callout type="why">
-          <strong>Why mask user turns?</strong> Without <code>completion_only_loss=True</code>,
-          the model learns to predict the user's message too. During inference it starts
-          generating <em>"User: ..."</em> continuation instead of staying in the assistant
-          role. Masking forces all gradient signal through the assistant response only.
+          <span dangerouslySetInnerHTML={{ __html: t("sft.s2.why") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={3} title="SFTTrainConfig: the hyperparameters">
-        <p className="prose-custom text-base">
-          SFT uses a much lower learning rate than pretraining — typically{" "}
-          <strong>1e-5 to 5e-5</strong> vs. 3e-4 for pretraining. The model is
-          already well-initialized; we're nudging it toward instruction following,
-          not learning language from scratch.
-        </p>
+      <Section stepNum={3} title={t("sft.s3.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("sft.s3.p1") }} />
 
         <CodeBlock
           code={sftConfigCode}
@@ -305,10 +279,10 @@ export function SFTPage() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           {[
-            { key: "max_lr", val: "2e-5", note: "10× lower than pretrain — preserves base knowledge", color: "#0ea5e9" },
-            { key: "num_epochs", val: "1–3", note: "more epochs → overfitting on small datasets", color: "#10b981" },
-            { key: "packing", val: "False", note: "True = more efficient but loses conversation boundaries", color: "#f59e0b" },
-            { key: "max_seq_len", val: "2048", note: "cap to avoid OOM on multi-turn conversations", color: "#a855f7" },
+            { key: "max_lr",      val: "2e-5",  note: t("sft.s3.p1m1.n"), color: "#0ea5e9" },
+            { key: "num_epochs",  val: "1–3",   note: t("sft.s3.p1m2.n"), color: "#10b981" },
+            { key: "packing",     val: "False",  note: t("sft.s3.p1m3.n"), color: "#f59e0b" },
+            { key: "max_seq_len", val: "2048",  note: t("sft.s3.p1m4.n"), color: "#a855f7" },
           ].map((item) => (
             <div key={item.key} className="card-glass p-4" style={{ borderColor: `${item.color}20` }}>
               <div className="flex items-center justify-between mb-1">
@@ -321,14 +295,8 @@ export function SFTPage() {
         </div>
       </Section>
 
-      <Section stepNum={4} title="Training with SFTTrainer">
-        <p className="prose-custom text-base">
-          TRL's <code>SFTTrainer</code> handles the full training loop: chat template
-          application, tokenization, masking, gradient accumulation, evaluation,
-          and checkpoint saving. The dataset must have a <code>"messages"</code> column
-          — if it also has a <code>"prompt"</code> column TRL takes a different (and
-          worse) code path, so we drop everything except <code>"messages"</code>.
-        </p>
+      <Section stepNum={4} title={t("sft.s4.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("sft.s4.p1") }} />
 
         <CodeBlock
           code={sftTrainCode}
@@ -337,14 +305,11 @@ export function SFTPage() {
         />
 
         <Callout type="tip">
-          SFT training is usually only <strong>1 epoch</strong> over the dataset.
-          More epochs produce diminishing returns on instruction following and
-          increase the risk of overfit (the model starts memorizing specific responses).
-          If you have &lt;50K examples, consider 2–3 epochs with early stopping.
+          <span dangerouslySetInnerHTML={{ __html: t("sft.s4.tip") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={5} title="Run it">
+      <Section stepNum={5} title={t("sft.s5.title")}>
         <CodeBlock
           language="bash"
           code={runSFTCode}
@@ -353,9 +318,9 @@ export function SFTPage() {
 
         <div className="grid sm:grid-cols-3 gap-4">
           {[
-            { label: "Dataset size", val: "200K turns", note: "ultrachat_200k" },
-            { label: "Training time", val: "~4 hours", note: "on 2× A100-80GB" },
-            { label: "Expected SFT loss", val: "~1.4–1.6", note: "after 1 epoch" },
+            { label: t("sft.s5.stat1.l"), val: t("sft.s5.stat1.v"), note: t("sft.s5.stat1.n") },
+            { label: t("sft.s5.stat2.l"), val: t("sft.s5.stat2.v"), note: t("sft.s5.stat2.n") },
+            { label: t("sft.s5.stat3.l"), val: t("sft.s5.stat3.v"), note: t("sft.s5.stat3.n") },
           ].map((item) => (
             <div key={item.label} className="card-glass p-4 text-center">
               <div className="text-xl font-bold gradient-text mb-0.5">{item.val}</div>
@@ -366,10 +331,7 @@ export function SFTPage() {
         </div>
 
         <Callout type="insight">
-          The SFT checkpoint is saved in HuggingFace format (not <code>.pt</code>).
-          That means <code>AutoTokenizer.from_pretrained()</code> and{" "}
-          <code>UnboxForCausalLM.from_pretrained()</code> both work directly on
-          the output directory. This is the checkpoint you hand to DPO next.
+          <span dangerouslySetInnerHTML={{ __html: t("sft.s5.insight") }} />
         </Callout>
       </Section>
     </ChapterLayout>

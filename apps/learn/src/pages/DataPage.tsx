@@ -3,6 +3,7 @@ import { Section } from "../components/Section";
 import { CodeBlock } from "../components/CodeBlock";
 import { Callout } from "../components/Callout";
 import { DataPipelineAnim } from "../components/animations/DataPipelineAnim";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const dataPrepareCode = `# unbox_platform/data/prepare.py
 import json
@@ -151,36 +152,28 @@ def build_dataloader(path: str, batch_size: int, num_workers: int = 4) -> DataLo
 `;
 
 export function DataPage() {
+  const { t } = useLanguage();
+
+  const filterItems = [t("data.s2.filter.i1"), t("data.s2.filter.i2"), t("data.s2.filter.i3"), t("data.s2.filter.i4")];
+  const dedupItems  = [t("data.s2.dedup.i1"),  t("data.s2.dedup.i2"),  t("data.s2.dedup.i3"),  t("data.s2.dedup.i4")];
+
   return (
     <ChapterLayout
       num="01"
-      title="Data Pipeline"
-      subtitle="From raw web crawl to packed token sequences ready for training. This is the unsexy foundation everything else depends on."
+      title={t("ch01.title")}
+      subtitle={t("data.subtitle")}
       color="text-indigo-400"
-      next={{ path: "/tokenizer", label: "Tokenizer" }}
+      next={{ path: "/tokenizer", label: t("ch02.title") }}
     >
       {/* Overview animation */}
       <DataPipelineAnim />
 
-      <Section stepNum={1} title="Where does the data come from?">
-        <p className="prose-custom text-base">
-          Pre-training data is the single biggest lever on model quality. You need{" "}
-          <strong>trillions of tokens</strong> of diverse, high-quality text. The industry
-          standard is a filtered subset of{" "}
-          <strong>Common Crawl</strong> — a petabyte-scale snapshot of the web taken
-          monthly since 2008.
-        </p>
-        <p className="prose-custom text-base">
-          For this project we use <strong>FineWeb-Edu</strong>: a 1.3 trillion token
-          dataset filtered to educational content using a classifier trained on human
-          ratings. It's freely available on Hugging Face and produces much better
-          models per token than raw crawl data.
-        </p>
+      <Section stepNum={1} title={t("data.s1.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("data.s1.p1") }} />
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("data.s1.p2") }} />
 
         <Callout type="why">
-          <strong>Why not just use Wikipedia or books?</strong> They're clean but tiny
-          — Wikipedia is ~4B tokens, Project Gutenberg ~3B. A 760M parameter model needs
-          ~15B+ tokens to converge (Chinchilla scaling). You need web data.
+          <span dangerouslySetInnerHTML={{ __html: t("data.s1.why") }} />
         </Callout>
 
         <CodeBlock
@@ -190,39 +183,17 @@ export function DataPage() {
         />
 
         <Callout type="tip">
-          Use <code>streaming=True</code> when downloading large datasets. It lets you
-          start processing immediately without downloading the full ~200GB to disk first.
+          <span dangerouslySetInnerHTML={{ __html: t("data.s1.tip") }} />
         </Callout>
       </Section>
 
-      <Section stepNum={2} title="Data quality: filter and deduplicate">
-        <p className="prose-custom text-base">
-          Raw web data is noisy. Pages contain spam, boilerplate, duplicated content, and
-          text in unexpected languages. Two operations have the highest ROI:
-        </p>
+      <Section stepNum={2} title={t("data.s2.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("data.s2.p1") }} />
 
         <div className="grid sm:grid-cols-2 gap-4">
           {[
-            {
-              title: "Quality filtering",
-              color: "#f59e0b",
-              items: [
-                "Language detection (fasttext)",
-                "Perplexity filtering with KenLM",
-                "Remove HTML artifacts",
-                "Filter short / boilerplate text",
-              ],
-            },
-            {
-              title: "Deduplication",
-              color: "#ec4899",
-              items: [
-                "Exact dedup with MD5/SHA-256",
-                "Near-dedup with MinHash LSH",
-                "URL-level dedup",
-                "Paragraph-level exact match",
-              ],
-            },
+            { title: t("data.s2.filter.title"), color: "#f59e0b", items: filterItems },
+            { title: t("data.s2.dedup.title"),  color: "#ec4899", items: dedupItems  },
           ].map((card) => (
             <div
               key={card.title}
@@ -251,25 +222,15 @@ export function DataPage() {
         />
 
         <Callout type="insight">
-          Deduplication is disproportionately impactful. GPT-3's training data was ~3%
-          duplicates, but removing them improved validation loss more than adding
-          equivalent unique tokens. The model memorizes duplicates instead of learning.
+          {t("data.s2.insight")}
         </Callout>
       </Section>
 
-      <Section stepNum={3} title="Tokenize and pack sequences">
-        <p className="prose-custom text-base">
-          After filtering, we convert raw text to token IDs and pack them into
-          fixed-length sequences. This is a one-time offline step that produces the
-          exact numpy array we load during training.
-        </p>
+      <Section stepNum={3} title={t("data.s3.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("data.s3.p1") }} />
 
         <Callout type="why">
-          <strong>Why pack instead of pad?</strong> Padding wastes computation on tokens
-          that contribute zero gradient. With padding you might hit 60-70% token
-          utilization. Sequence packing with document boundaries gives you{" "}
-          <strong>~100% utilization</strong>. At scale this is the difference between
-          a $1M training run and a $600K one.
+          <span dangerouslySetInnerHTML={{ __html: t("data.s3.why") }} />
         </Callout>
 
         <CodeBlock
@@ -279,7 +240,7 @@ export function DataPage() {
         />
 
         <div className="card-glass p-5">
-          <div className="text-sm font-semibold text-white mb-3">Sequence packing visualized</div>
+          <div className="text-sm font-semibold text-white mb-3">{t("data.s3.vis.title")}</div>
           <div className="space-y-2">
             {[
               { label: "Document A", len: 60, color: "#0ea5e9" },
@@ -307,7 +268,7 @@ export function DataPage() {
               </div>
             ))}
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500 w-20 flex-shrink-0">Packed</span>
+              <span className="text-xs text-gray-500 w-20 flex-shrink-0">{t("data.s3.vis.packed")}</span>
               <div className="flex-1 h-6 bg-surface-700 rounded overflow-hidden">
                 {[
                   { len: 60, color: "#0ea5e9" },
@@ -327,19 +288,12 @@ export function DataPage() {
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            All 3 documents packed into one 1024-token sequence with <code>&lt;eos&gt;</code> separators.
-            100% token utilization.
-          </p>
+          <p className="text-xs text-gray-500 mt-2" dangerouslySetInnerHTML={{ __html: t("data.s3.vis.note") }} />
         </div>
       </Section>
 
-      <Section stepNum={4} title="Build the DataLoader">
-        <p className="prose-custom text-base">
-          The final step is loading the packed numpy arrays into a PyTorch{" "}
-          <code>DataLoader</code>. We use <strong>memory mapping</strong> so the OS
-          pages in only the chunks needed — no full dataset in RAM.
-        </p>
+      <Section stepNum={4} title={t("data.s4.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("data.s4.p1") }} />
 
         <CodeBlock
           code={dataLoaderCode}
@@ -348,31 +302,26 @@ export function DataPage() {
         />
 
         <Callout type="tip">
-          <strong>num_workers=4</strong> launches 4 background processes that prefetch
-          batches while the GPU is busy on the previous step. Without this, CPU data loading
-          becomes the bottleneck. Set <code>pin_memory=True</code> to enable faster
-          CPU→GPU DMA transfers.
+          <span dangerouslySetInnerHTML={{ __html: t("data.s4.tip") }} />
         </Callout>
 
         <div className="grid sm:grid-cols-3 gap-4">
-          {[
-            { key: "Batch size", val: "32–512", note: "per GPU, tune to memory" },
-            { key: "Seq length", val: "1024–8192", note: "longer = more compute" },
-            { key: "Token utilization", val: "~100%", note: "vs 60-70% with padding" },
-          ].map((item) => (
-            <div key={item.key} className="card-glass p-4">
-              <div className="text-xs text-gray-500 mb-1">{item.key}</div>
-              <div className="text-xl font-bold text-brand-300 font-mono">{item.val}</div>
-              <div className="text-xs text-gray-600 mt-1">{item.note}</div>
+          {([
+            { k: t("data.s4.stat1.k"), v: t("data.s4.stat1.v"), n: t("data.s4.stat1.n") },
+            { k: t("data.s4.stat2.k"), v: t("data.s4.stat2.v"), n: t("data.s4.stat2.n") },
+            { k: t("data.s4.stat3.k"), v: t("data.s4.stat3.v"), n: t("data.s4.stat3.n") },
+          ]).map((item) => (
+            <div key={item.k} className="card-glass p-4">
+              <div className="text-xs text-gray-500 mb-1">{item.k}</div>
+              <div className="text-xl font-bold text-brand-300 font-mono">{item.v}</div>
+              <div className="text-xs text-gray-600 mt-1">{item.n}</div>
             </div>
           ))}
         </div>
       </Section>
 
-      <Section stepNum={5} title="Run it">
-        <p className="prose-custom text-base">
-          The full pipeline is wired up as a CLI command. Run it once before training:
-        </p>
+      <Section stepNum={5} title={t("data.s5.title")}>
+        <p className="prose-custom text-base" dangerouslySetInnerHTML={{ __html: t("data.s5.p1") }} />
 
         <CodeBlock
           language="bash"
@@ -394,10 +343,7 @@ python -c "import numpy as np; d=np.load('data/packed_1024.npy'); print(f'{len(d
         />
 
         <Callout type="insight">
-          You only run the data pipeline <strong>once</strong>. The resulting{" "}
-          <code>.npy</code> file is your training data for all experiments. If you change
-          the tokenizer vocabulary, you need to re-tokenize. If you just change model
-          architecture or training hyperparameters, you don't.
+          <span dangerouslySetInnerHTML={{ __html: t("data.s5.insight") }} />
         </Callout>
       </Section>
     </ChapterLayout>

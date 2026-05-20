@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Bell, GitBranch } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface ComingSoonPageProps {
   chapter: string;
@@ -66,6 +67,7 @@ const chapterDetails: Record<string, { num: string; icon: string; desc: string; 
 };
 
 export function ComingSoonPage({ chapter }: ComingSoonPageProps) {
+  const { t } = useLanguage();
   const details = chapterDetails[chapter];
   if (!details) return null;
 
@@ -76,7 +78,7 @@ export function ComingSoonPage({ chapter }: ComingSoonPageProps) {
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors mb-10"
       >
         <ArrowLeft size={14} />
-        Back to overview
+        {t("comingSoon.back")}
       </Link>
 
       <motion.div
@@ -111,13 +113,13 @@ export function ComingSoonPage({ chapter }: ComingSoonPageProps) {
             }}
           >
             <Bell size={14} />
-            Coming soon — in development
+            {t("comingSoon.badge")}
           </motion.div>
         </div>
 
         {/* Topics preview */}
         <div className="card-glass p-6 mb-8">
-          <h2 className="text-lg font-bold text-white mb-4">What you'll learn</h2>
+          <h2 className="text-lg font-bold text-white mb-4">{t("comingSoon.learn")}</h2>
           <div className="grid sm:grid-cols-2 gap-2">
             {details.topics.map((topic, i) => (
               <motion.div
@@ -140,16 +142,16 @@ export function ComingSoonPage({ chapter }: ComingSoonPageProps) {
         {/* Nav to available chapters */}
         <div className="text-center">
           <p className="text-sm text-gray-500 mb-4">
-            In the meantime, explore the available chapters:
+            {t("comingSoon.meanwhile")}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {[
-              { path: "/data", label: "01 — Data Pipeline", color: "#6366f1" },
-              { path: "/tokenizer", label: "02 — Tokenizer", color: "#10b981" },
-              { path: "/pretraining", label: "03 — Pre-training", color: "#0ea5e9" },
-              { path: "/eval", label: "04 — Evaluation", color: "#8b5cf6" },
-              { path: "/sft", label: "05 — SFT", color: "#f59e0b" },
-              { path: "/dpo", label: "06 — DPO", color: "#ec4899" },
+              { path: "/data",        label: `01 — ${t("ch01.title")}`, color: "#6366f1" },
+              { path: "/tokenizer",   label: `02 — ${t("ch02.title")}`, color: "#10b981" },
+              { path: "/pretraining", label: `03 — ${t("ch03.title")}`, color: "#0ea5e9" },
+              { path: "/eval",        label: `04 — ${t("ch04.title")}`, color: "#8b5cf6" },
+              { path: "/sft",         label: `05 — ${t("ch05.title")}`, color: "#f59e0b" },
+              { path: "/dpo",         label: `06 — ${t("ch06.title")}`, color: "#ec4899" },
             ].map((ch) => (
               <Link
                 key={ch.path}
@@ -176,7 +178,7 @@ export function ComingSoonPage({ chapter }: ComingSoonPageProps) {
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors"
           >
             <GitBranch size={14} />
-            Follow progress on GitHub
+            {t("comingSoon.github")}
           </a>
         </div>
       </motion.div>

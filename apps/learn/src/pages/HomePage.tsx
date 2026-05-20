@@ -1,98 +1,43 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle, Clock, Zap, BookOpen, Code, Brain } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
 
-const chapters = [
-  {
-    num: "01",
-    title: "Data Pipeline",
-    path: "/data",
-    ready: true,
-    color: "#6366f1",
-    icon: "🌐",
-    desc: "From raw web crawl to packed token sequences. Data curation, deduplication, tokenization, and efficient batching.",
-    topics: ["FineWeb-Edu dataset", "Quality filtering", "Data deduplication", "Sequence packing"],
-  },
-  {
-    num: "02",
-    title: "Tokenizer",
-    path: "/tokenizer",
-    ready: true,
-    color: "#10b981",
-    icon: "✂️",
-    desc: "Turn text into integers the model can process. Learn BPE, SentencePiece, and how to train your own tokenizer.",
-    topics: ["BPE algorithm", "SentencePiece", "Vocabulary size tradeoffs", "Special tokens"],
-  },
-  {
-    num: "03",
-    title: "Pre-training",
-    path: "/pretraining",
-    ready: true,
-    color: "#0ea5e9",
-    icon: "⚡",
-    desc: "Train a GPT-class model from scratch. Transformer architecture, the training loop, mixed precision, and checkpointing.",
-    topics: ["Transformer architecture", "Next-token prediction", "AdamW + LR schedule", "Mixed precision"],
-  },
-  {
-    num: "04",
-    title: "Evaluation",
-    path: "/eval",
-    ready: true,
-    color: "#8b5cf6",
-    icon: "📊",
-    desc: "Measure model quality before committing to fine-tuning. Perplexity, qualitative sampling, and DPO win-rate.",
-    topics: ["Perplexity on held-out data", "Sampling strategies (top-k, nucleus)", "Chat-format generation", "DPO win-rate metric"],
-  },
-  {
-    num: "05",
-    title: "SFT",
-    path: "/sft",
-    ready: true,
-    color: "#f59e0b",
-    icon: "💬",
-    desc: "Turn a base model into an instruction follower. HF adapter, chat templates, completion-only loss, TRL SFTTrainer.",
-    topics: ["UnboxForCausalLM HF adapter", "Chat templates (ChatML)", "completion_only_loss", "SFTTrainer + SFTConfig"],
-  },
-  {
-    num: "06",
-    title: "DPO",
-    path: "/dpo",
-    ready: true,
-    color: "#ec4899",
-    icon: "🏆",
-    desc: "Align the model with human preferences using chosen/rejected pairs. No reward model needed.",
-    topics: ["DPO vs RLHF", "Implicit reward formulation", "β as KL constraint", "ultrafeedback_binarized dataset"],
-  },
-  {
-    num: "07",
-    title: "Inference",
-    path: "/inference",
-    ready: false,
-    color: "#a855f7",
-    icon: "🚀",
-    desc: "Serve the model at scale. Continuous batching, paged KV cache, disaggregated prefill-decode, Triton kernels.",
-    topics: ["PagedAttention", "Continuous batching", "Disaggregated serving", "Triton kernels"],
-  },
-  {
-    num: "08",
-    title: "Distillation",
-    path: "/distillation",
-    ready: false,
-    color: "#14b8a6",
-    icon: "🔬",
-    desc: "Transfer knowledge from a large teacher to a small student via logit matching and hidden state alignment.",
-    topics: ["Logit distillation", "Hidden state distillation", "GKDTrainer", "Reasoning transfer"],
-  },
+const chapterMeta = [
+  { num: "01", path: "/data",        ready: true,  color: "#6366f1", icon: "🌐", key: "ch01" },
+  { num: "02", path: "/tokenizer",   ready: true,  color: "#10b981", icon: "✂️",  key: "ch02" },
+  { num: "03", path: "/pretraining", ready: true,  color: "#0ea5e9", icon: "⚡",  key: "ch03" },
+  { num: "04", path: "/eval",        ready: true,  color: "#8b5cf6", icon: "📊", key: "ch04" },
+  { num: "05", path: "/sft",         ready: true,  color: "#f59e0b", icon: "💬", key: "ch05" },
+  { num: "06", path: "/dpo",         ready: true,  color: "#ec4899", icon: "🏆", key: "ch06" },
+  { num: "07", path: "/inference",   ready: false, color: "#a855f7", icon: "🚀", key: "ch07" },
+  { num: "08", path: "/distillation",ready: false, color: "#14b8a6", icon: "🔬", key: "ch08" },
 ];
 
-const stats = [
-  { label: "Lines of explained code", value: "10,000+" },
-  { label: "Interactive animations", value: "20+" },
-  { label: "Chapters", value: "7" },
-  { label: "From scratch", value: "100%" },
-];
+const statsKeys = ["lines", "anims", "chapters", "scratch"] as const;
+const statsValues = ["10,000+", "20+", "7", "100%"];
 
 export function HomePage() {
+  const { t } = useLanguage();
+
+  const chapters = chapterMeta.map((ch) => ({
+    ...ch,
+    title: t(`${ch.key}.title`),
+    desc: t(`${ch.key}.desc`),
+    topics: [t(`${ch.key}.t1`), t(`${ch.key}.t2`), t(`${ch.key}.t3`), t(`${ch.key}.t4`)],
+  }));
+
+  const stats = statsKeys.map((k, i) => ({
+    label: t(`home.stats.${k}`),
+    value: statsValues[i],
+  }));
+
+  const philosophy = [
+    { title: t("home.simplicity.title"), desc: t("home.simplicity.desc") },
+    { title: t("home.realCode.title"),   desc: t("home.realCode.desc") },
+    { title: t("home.build.title"),      desc: t("home.build.desc") },
+  ];
+
   return (
     <div>
       {/* Hero */}
@@ -118,18 +63,16 @@ export function HomePage() {
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/25 text-brand-300 text-xs font-semibold mb-6"
             >
               <Zap size={12} />
-              Build LLMs from scratch — step by step
+              {t("home.badge")}
             </motion.div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight tracking-tight">
-              Train an LLM{" "}
-              <span className="gradient-text">from scratch</span>
+              {t("home.title")}{" "}
+              <span className="gradient-text">{t("home.gradient")}</span>
             </h1>
 
             <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed">
-              A hands-on guide to building industrial-grade language model infrastructure:
-              data pipelines, tokenizers, pre-training, fine-tuning, and inference engines.
-              Every component explained with code and animations.
+              {t("home.subtitle")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -137,7 +80,7 @@ export function HomePage() {
                 to="/data"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition-colors glow-brand-sm"
               >
-                Start Learning
+                {t("home.start")}
                 <ArrowRight size={16} />
               </Link>
               <a
@@ -147,7 +90,7 @@ export function HomePage() {
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold text-sm transition-colors border border-white/10"
               >
                 <Code size={16} />
-                View Source Code
+                {t("home.source")}
               </a>
             </div>
           </motion.div>
@@ -169,11 +112,11 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* What you'll learn */}
+      {/* Learning path */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center gap-3 mb-8">
           <BookOpen size={18} className="text-brand-400" />
-          <h2 className="text-2xl font-bold text-white">Learning Path</h2>
+          <h2 className="text-2xl font-bold text-white">{t("home.path")}</h2>
         </div>
 
         <div className="space-y-4">
@@ -192,7 +135,7 @@ export function HomePage() {
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  {/* Chapter number */}
+                  {/* Chapter icon */}
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
                     style={{ background: `${ch.color}15`, border: `1px solid ${ch.color}30` }}
@@ -209,12 +152,12 @@ export function HomePage() {
                       {ch.ready ? (
                         <span className="flex items-center gap-1 text-xs text-emerald-400">
                           <CheckCircle size={12} />
-                          Ready
+                          {t("home.ready")}
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-xs text-gray-600">
                           <Clock size={12} />
-                          Coming soon
+                          {t("home.soon")}
                         </span>
                       )}
                     </div>
@@ -222,9 +165,9 @@ export function HomePage() {
                     <p className="text-sm text-gray-400 mb-3">{ch.desc}</p>
 
                     <div className="flex flex-wrap gap-2">
-                      {ch.topics.map((t) => (
+                      {ch.topics.map((topic) => (
                         <span
-                          key={t}
+                          key={topic}
                           className="px-2 py-0.5 rounded-full text-xs border"
                           style={{
                             color: `${ch.color}cc`,
@@ -232,7 +175,7 @@ export function HomePage() {
                             background: `${ch.color}0a`,
                           }}
                         >
-                          {t}
+                          {topic}
                         </span>
                       ))}
                     </div>
@@ -251,28 +194,15 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Philosophy section */}
+      {/* Philosophy */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-20">
         <div className="card-glass p-8 gradient-border">
           <div className="flex items-center gap-2 mb-4">
             <Brain size={18} className="text-brand-400" />
-            <h2 className="text-xl font-bold text-white">The Philosophy</h2>
+            <h2 className="text-xl font-bold text-white">{t("home.philosophy.title")}</h2>
           </div>
           <div className="grid sm:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Simplicity over speed",
-                desc: "Target ~50% of industry throughput while keeping every component readable and hackable. Understand before you optimize.",
-              },
-              {
-                title: "Real code, real system",
-                desc: "Every snippet is from unbox_platform — a complete, functional LLM stack comparable to Megatron-LM in scope, built for learning.",
-              },
-              {
-                title: "Build to understand",
-                desc: "Don't wrap APIs. Build the tokenizer. Write the training loop. Run the attention kernel. Understanding comes from implementation.",
-              },
-            ].map((item) => (
+            {philosophy.map((item) => (
               <div key={item.title}>
                 <h3 className="font-semibold text-white mb-2">{item.title}</h3>
                 <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
