@@ -1493,11 +1493,28 @@
       color: var(--text-dimmer);
       margin-top: 10px;
       letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 9px;
     }
     .wl-counter strong {
       color: var(--text-dim);
       font-weight: 500;
     }
+    .wl-avatars {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .wl-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .wl-avatar + .wl-avatar { margin-left: -7px; }
 
     /* ─── RESPONSIVE ─── */
     @media (max-width: 1200px) {
@@ -1582,7 +1599,7 @@
         </div>
       </div>
       <p class="hero-note" data-i18n="hero-note">No spam &middot; notify-only &middot; unsubscribe any time</p>
-      <p class="wl-counter"><span data-i18n="wl-prefix">Join</span> <strong><span class="wl-count">312</span>+</strong> <span data-i18n="wl-suffix">engineers on the waitlist</span></p>
+      <p class="wl-counter"><span class="wl-avatars" aria-hidden="true"><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3a6fd8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#18a87e"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#7c42c8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#b84f1a"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3d5080"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg></span><span><span data-i18n="wl-prefix">Join</span> <strong><span class="wl-count">312</span>+</strong> <span data-i18n="wl-suffix">engineers on the waitlist</span></span></p>
     </div>
 
     <!-- architecture diagram column -->
@@ -2092,7 +2109,7 @@
     </div>
   </div>
   <p class="hero-note" data-i18n="hero-note">No spam &middot; notify-only &middot; unsubscribe any time</p>
-  <p class="wl-counter" style="margin-top:14px"><span data-i18n="wl-prefix">Join</span> <strong><span class="wl-count">312</span>+</strong> <span data-i18n="wl-suffix-2">engineers already on the list</span></p>
+  <p class="wl-counter" style="margin-top:14px; justify-content:center;"><span class="wl-avatars" aria-hidden="true"><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3a6fd8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#18a87e"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#7c42c8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#b84f1a"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3d5080"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg></span><span><span data-i18n="wl-prefix">Join</span> <strong><span class="wl-count">312</span>+</strong> <span data-i18n="wl-suffix-2">engineers already on the list</span></span></p>
 </div>
 
 <!-- ─── FOOTER ─── -->
