@@ -488,9 +488,10 @@
     .modules-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(290px, 340px));
-      background: var(--border);
-      gap: 1px;
-      border: 1px solid var(--border);
+      background: transparent;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
     }
 
     .mod-card {
@@ -500,6 +501,8 @@
       overflow: hidden;
       cursor: default;
       transition: background 0.2s;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
     .mod-card::after {
       content: '';
