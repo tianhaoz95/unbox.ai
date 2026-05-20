@@ -100,34 +100,30 @@ export function PerplexityAnim() {
         ))}
       </div>
 
-      {/* Reference comparison */}
-      <AnimatePresence>
-        {showRef && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="text-xs text-gray-600 mb-2">PPL benchmarks</div>
-            <div className="space-y-1">
-              {references.map((ref) => (
-                <div key={ref.model} className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: ref.color }}
-                  />
-                  <span className="text-xs text-gray-400 flex-1">{ref.model}</span>
-                  <span
-                    className="font-mono text-xs font-semibold"
-                    style={{ color: ref.color }}
-                  >
-                    {ref.ppl.toLocaleString()}
-                  </span>
-                </div>
-              ))}
+      {/* Reference comparison — always rendered, opacity-only fade to prevent layout shifts */}
+      <motion.div
+        animate={{ opacity: showRef ? 1 : 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div className="text-xs text-gray-600 mb-2">PPL benchmarks</div>
+        <div className="space-y-1">
+          {references.map((ref) => (
+            <div key={ref.model} className="flex items-center gap-2">
+              <div
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ background: ref.color }}
+              />
+              <span className="text-xs text-gray-400 flex-1">{ref.model}</span>
+              <span
+                className="font-mono text-xs font-semibold"
+                style={{ color: ref.color }}
+              >
+                {ref.ppl.toLocaleString()}
+              </span>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          ))}
+        </div>
+      </motion.div>
     </div>
   );
 }

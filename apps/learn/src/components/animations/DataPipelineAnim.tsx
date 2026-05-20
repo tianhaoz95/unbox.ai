@@ -90,84 +90,86 @@ export function DataPipelineAnim() {
         ))}
       </div>
 
-      {/* Active stage detail */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeStage}
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -10 }}
-          transition={{ duration: 0.25 }}
-          className="rounded-xl p-4 border"
-          style={{
-            background: `${stages[activeStage].color}0d`,
-            borderColor: `${stages[activeStage].color}30`,
-          }}
-        >
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">{stages[activeStage].icon}</span>
-            <div>
-              <div
-                className="font-semibold text-sm mb-1"
-                style={{ color: stages[activeStage].color }}
-              >
-                {stages[activeStage].label}
-              </div>
-              <div className="text-xs text-gray-400 mb-2">{stages[activeStage].desc}</div>
-
-              {/* Animated document snippet */}
-              {activeStage === 0 && (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentDoc}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="font-mono text-xs text-gray-400 bg-black/20 rounded p-2"
-                  >
-                    "{sampleDocs[currentDoc]}"
-                  </motion.div>
-                </AnimatePresence>
-              )}
-
-              {activeStage === 2 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {["The", "▁quick", "▁brown", "▁fox", "▁jumps"].map((tok, i) => (
-                    <motion.span
-                      key={tok}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="px-1.5 py-0.5 rounded text-xs font-mono"
-                      style={{ background: `${stages[activeStage].color}25`, color: stages[activeStage].color }}
-                    >
-                      {tok}
-                    </motion.span>
-                  ))}
-                </div>
-              )}
-
-              {activeStage === 3 && (
-                <div className="font-mono text-xs text-gray-400 bg-black/20 rounded p-2">
-                  <span className="text-emerald-400">[1024 tokens]</span> × <span className="text-brand-400">batch=32</span>
-                  <br />
-                  <span className="text-gray-600">no padding, full utilization</span>
-                </div>
-              )}
-
-              {activeStage === 4 && (
-                <motion.div
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="font-mono text-xs text-purple-400"
+      {/* Active stage detail — fixed height to prevent layout shifts */}
+      <div className="h-[110px] overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeStage}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.25 }}
+            className="rounded-xl p-4 border h-full"
+            style={{
+              background: `${stages[activeStage].color}0d`,
+              borderColor: `${stages[activeStage].color}30`,
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">{stages[activeStage].icon}</span>
+              <div className="flex-1 min-w-0">
+                <div
+                  className="font-semibold text-sm mb-1"
+                  style={{ color: stages[activeStage].color }}
                 >
-                  loss: 3.421 → 2.876 → 2.341...
-                </motion.div>
-              )}
+                  {stages[activeStage].label}
+                </div>
+                <div className="text-xs text-gray-400 mb-2">{stages[activeStage].desc}</div>
+
+                {/* Animated document snippet */}
+                {activeStage === 0 && (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentDoc}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="font-mono text-xs text-gray-400 bg-black/20 rounded p-2 truncate"
+                    >
+                      "{sampleDocs[currentDoc]}"
+                    </motion.div>
+                  </AnimatePresence>
+                )}
+
+                {activeStage === 2 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {["The", "▁quick", "▁brown", "▁fox", "▁jumps"].map((tok, i) => (
+                      <motion.span
+                        key={tok}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="px-1.5 py-0.5 rounded text-xs font-mono"
+                        style={{ background: `${stages[activeStage].color}25`, color: stages[activeStage].color }}
+                      >
+                        {tok}
+                      </motion.span>
+                    ))}
+                  </div>
+                )}
+
+                {activeStage === 3 && (
+                  <div className="font-mono text-xs text-gray-400 bg-black/20 rounded p-2">
+                    <span className="text-emerald-400">[1024 tokens]</span> × <span className="text-brand-400">batch=32</span>
+                    <br />
+                    <span className="text-gray-600">no padding, full utilization</span>
+                  </div>
+                )}
+
+                {activeStage === 4 && (
+                  <motion.div
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="font-mono text-xs text-purple-400"
+                  >
+                    loss: 3.421 → 2.876 → 2.341...
+                  </motion.div>
+                )}
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

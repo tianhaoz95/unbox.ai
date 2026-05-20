@@ -98,19 +98,16 @@ export function BPEAnim() {
         ))}
       </div>
 
-      {/* Pair frequencies */}
-      {Object.keys(current.pairs).length > 0 && (
-        <div>
-          <div className="text-xs text-gray-600 mb-2">Pair frequencies</div>
+      {/* Pair frequencies — always reserve space to prevent layout shifts */}
+      <div className="h-[100px]">
+        <div className="text-xs text-gray-600 mb-2">Pair frequencies</div>
+        {Object.keys(current.pairs).length > 0 ? (
           <div className="space-y-1">
             {Object.entries(current.pairs)
               .filter(([, v]) => v > 0)
               .sort(([, a], [, b]) => b - a)
               .map(([pair, count]) => (
-                <div
-                  key={pair}
-                  className="flex items-center gap-2"
-                >
+                <div key={pair} className="flex items-center gap-2">
                   <span
                     className="font-mono text-xs px-1.5 py-0.5 rounded"
                     style={{
@@ -134,8 +131,10 @@ export function BPEAnim() {
                 </div>
               ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-xs text-gray-600 italic">Vocabulary learned — no more merges needed</div>
+        )}
+      </div>
 
       {/* Progress */}
       <div className="mt-4 flex gap-1.5 justify-center">

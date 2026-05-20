@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const steps = [
   { id: "forward", label: "Forward Pass", icon: "→", color: "#0ea5e9", desc: "Input tokens → logits" },
@@ -86,18 +86,16 @@ export function TrainingLoopAnim() {
             >
               {step.label}
             </div>
-            <AnimatePresence>
-              {activeStep === i && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="text-xs text-gray-500 mt-0.5"
-                >
-                  {step.desc}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Fixed height for description — no height animation to prevent layout shifts */}
+            <div className="h-[28px] overflow-hidden mt-0.5">
+              <motion.div
+                animate={{ opacity: activeStep === i ? 1 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="text-xs text-gray-500"
+              >
+                {step.desc}
+              </motion.div>
+            </div>
           </motion.div>
         ))}
       </div>

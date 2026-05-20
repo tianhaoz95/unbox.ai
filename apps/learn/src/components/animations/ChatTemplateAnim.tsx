@@ -67,94 +67,97 @@ export function ChatTemplateAnim() {
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
-        {step === 0 && (
-          <motion.div key="messages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="space-y-2">
-              {conversation.map((msg, i) => {
-                const cfg = roleConfig[msg.role];
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: i * 0.12 }}
-                    className="rounded-lg p-3 border"
-                    style={{ background: cfg.bg, borderColor: cfg.border }}
-                  >
-                    <span className="text-xs font-mono font-semibold" style={{ color: cfg.color }}>
-                      {cfg.label}
-                    </span>
-                    <p className="text-xs text-gray-300 mt-1 leading-relaxed">{msg.content}</p>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {step === 1 && (
-          <motion.div key="template" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="font-mono text-xs bg-surface-700/50 rounded-lg p-3 text-gray-300 leading-loose whitespace-pre-wrap break-all">
-              {templateText.split("\n").map((line, i) => (
-                <span key={i}>
-                  {line.includes("<|im_start|>system") ? (
-                    <span className="text-indigo-400">{line}</span>
-                  ) : line.includes("<|im_start|>user") ? (
-                    <span className="text-brand-400">{line}</span>
-                  ) : line.includes("<|im_start|>assistant") ? (
-                    <span className="text-emerald-400">{line}</span>
-                  ) : line.includes("<|im_end|>") ? (
-                    <span className="text-gray-500">{line}</span>
-                  ) : (
-                    line
-                  )}
-                  {"\n"}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {step === 2 && (
-          <motion.div key="tokens" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="space-y-2">
-              {tokenRows.map((row, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg p-3 border"
-                  style={{
-                    background: row.masked ? "rgba(239,68,68,0.06)" : "rgba(16,185,129,0.08)",
-                    borderColor: row.masked ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)",
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-mono truncate text-gray-400 max-w-[200px]">
-                      {row.text}
-                    </span>
-                    <span
-                      className="text-xs font-semibold ml-2 flex-shrink-0"
-                      style={{ color: row.masked ? "#ef4444" : "#10b981" }}
+      {/* Fixed height content area to prevent layout shifts between views */}
+      <div className="h-[220px] overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <motion.div key="messages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-hidden">
+              <div className="space-y-2">
+                {conversation.map((msg, i) => {
+                  const cfg = roleConfig[msg.role];
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ x: -10, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: i * 0.12 }}
+                      className="rounded-lg p-3 border"
+                      style={{ background: cfg.bg, borderColor: cfg.border }}
                     >
-                      {row.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 mt-1">
-                    {row.masked ? (
-                      <span className="text-xs text-red-400">labels = -100 (ignored by cross-entropy)</span>
+                      <span className="text-xs font-mono font-semibold" style={{ color: cfg.color }}>
+                        {cfg.label}
+                      </span>
+                      <p className="text-xs text-gray-300 mt-1 leading-relaxed">{msg.content}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {step === 1 && (
+            <motion.div key="template" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-hidden">
+              <div className="font-mono text-xs bg-surface-700/50 rounded-lg p-3 text-gray-300 leading-loose whitespace-pre-wrap break-all h-full overflow-hidden">
+                {templateText.split("\n").map((line, i) => (
+                  <span key={i}>
+                    {line.includes("<|im_start|>system") ? (
+                      <span className="text-indigo-400">{line}</span>
+                    ) : line.includes("<|im_start|>user") ? (
+                      <span className="text-brand-400">{line}</span>
+                    ) : line.includes("<|im_start|>assistant") ? (
+                      <span className="text-emerald-400">{line}</span>
+                    ) : line.includes("<|im_end|>") ? (
+                      <span className="text-gray-500">{line}</span>
                     ) : (
-                      <span className="text-xs text-emerald-400">loss computed → model learns response</span>
+                      line
                     )}
+                    {"\n"}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div key="tokens" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-hidden">
+              <div className="space-y-2">
+                {tokenRows.map((row, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg p-3 border"
+                    style={{
+                      background: row.masked ? "rgba(239,68,68,0.06)" : "rgba(16,185,129,0.08)",
+                      borderColor: row.masked ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)",
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-mono truncate text-gray-400 max-w-[200px]">
+                        {row.text}
+                      </span>
+                      <span
+                        className="text-xs font-semibold ml-2 flex-shrink-0"
+                        style={{ color: row.masked ? "#ef4444" : "#10b981" }}
+                      >
+                        {row.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      {row.masked ? (
+                        <span className="text-xs text-red-400">labels = -100 (ignored by cross-entropy)</span>
+                      ) : (
+                        <span className="text-xs text-emerald-400">loss computed → model learns response</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-600 mt-3">
-              <code className="text-brand-400">completion_only_loss=True</code> masks prompt tokens automatically
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                ))}
+              </div>
+              <p className="text-xs text-gray-600 mt-3">
+                <code className="text-brand-400">completion_only_loss=True</code> masks prompt tokens automatically
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

@@ -97,31 +97,28 @@ export function TokenizerAnim() {
         </div>
       </div>
 
-      {/* IDs */}
-      <AnimatePresence>
-        {showIds && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="text-xs text-gray-600 mb-2">Token IDs</div>
-            <div className="flex flex-wrap gap-2">
-              {example.ids.map((id, i) => (
-                <motion.span
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.08 }}
-                  className="font-mono text-xs px-2 py-1 rounded bg-surface-700 text-gray-400 border border-white/5"
-                >
-                  {id}
-                </motion.span>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* IDs — always reserve space to prevent layout shifts */}
+      <div className="h-[52px]">
+        <motion.div
+          animate={{ opacity: showIds ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="text-xs text-gray-600 mb-2">Token IDs</div>
+          <div className="flex flex-wrap gap-2">
+            {example.ids.map((id, i) => (
+              <motion.span
+                key={`${exampleIdx}-id-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: showIds ? 1 : 0 }}
+                transition={{ delay: i * 0.08 }}
+                className="font-mono text-xs px-2 py-1 rounded bg-surface-700 text-gray-400 border border-white/5"
+              >
+                {id}
+              </motion.span>
+            ))}
+          </div>
+        </motion.div>
+      </div>
 
       {/* Vocab indicator */}
       <div className="mt-4 pt-4 border-t border-white/5">
