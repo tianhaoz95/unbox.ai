@@ -2123,7 +2123,8 @@
   import { initializeApp }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getAnalytics }             from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
   import { getFirestore, collection,
-           addDoc, serverTimestamp }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+           addDoc, serverTimestamp,
+           getCountFromServer }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
   const firebaseConfig = {
     apiKey:            "AIzaSyBT4YE-hAThkisCtf4jSerQiJFT9cS71ok",
@@ -2139,10 +2140,11 @@
   const analytics = getAnalytics(app);
   const db        = getFirestore(app);
 
-  window._db  = db;
-  window._col = collection(db, 'waitlist');
-  window._ts  = serverTimestamp;
-  window._add = addDoc;
+  window._db       = db;
+  window._col      = collection(db, 'waitlist');
+  window._ts       = serverTimestamp;
+  window._add      = addDoc;
+  window._getCount = getCountFromServer;
 </script>
 
 <!-- ─── PAGE JS ─── -->
@@ -2400,14 +2402,53 @@
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
   // ── Waitlist counter
-  const WL_BASE = 312;
-  let wlAdded = 0;
+  const WL_BASE  = 312;
+  let wlReal     = 0;     // fetched from Firestore
+  let wlAdded    = 0;     // signups in this session
+  let wlInView   = false;
+  let wlAnimated = false;
+
   function updateWLCount() {
     document.querySelectorAll('.wl-count').forEach(el => {
-      el.textContent = WL_BASE + wlAdded;
+      el.textContent = WL_BASE + wlReal + wlAdded;
     });
   }
+
+  function runWLAnimation() {
+    if (wlAnimated || !wlInView || wlReal === 0) return;
+    wlAnimated = true;
+    const end = WL_BASE + wlReal + wlAdded;
+    const t0  = performance.now();
+    (function step(now) {
+      const p     = Math.min((now - t0) / 1400, 1);
+      const eased = 1 - Math.pow(1 - p, 3);           // ease-out cubic
+      const val   = Math.round(WL_BASE + (end - WL_BASE) * eased);
+      document.querySelectorAll('.wl-count').forEach(el => { el.textContent = val; });
+      if (p < 1) requestAnimationFrame(step);
+    })(performance.now());
+  }
+
   updateWLCount();
+
+  // Trigger animation when either counter scrolls into view
+  const wlObserver = new IntersectionObserver(entries => {
+    if (entries.some(e => e.isIntersecting) && !wlAnimated) {
+      wlInView = true;
+      runWLAnimation();
+      wlObserver.disconnect();
+    }
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.wl-counter').forEach(el => wlObserver.observe(el));
+
+  // Fetch real count; modules are deferred so window._getCount is ready by DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', async function() {
+    try {
+      const snap = await window._getCount(window._col);
+      wlReal = snap.data().count;
+      updateWLCount();
+      runWLAnimation(); // animate if already in view
+    } catch (_) { /* leave WL_BASE as-is on error */ }
+  });
 
   // ── Pipeline animation (arch diagram + traveling packet + dynamic visualiser)
   (function() {
