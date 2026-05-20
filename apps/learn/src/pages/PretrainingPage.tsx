@@ -231,7 +231,7 @@ export function PretrainingPage() {
       subtitle="Feed the packed token sequences into a Transformer and predict the next token. This is where the model learns language, facts, and reasoning."
       color="text-brand-400"
       prev={{ path: "/tokenizer", label: "Tokenizer" }}
-      next={{ path: "/sft", label: "SFT (coming soon)" }}
+      next={{ path: "/eval", label: "Evaluation" }}
     >
       {/* Live animations */}
       <div className="grid sm:grid-cols-2 gap-4">

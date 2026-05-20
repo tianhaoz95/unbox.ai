@@ -36,7 +36,7 @@ const chapterDetails: Record<string, { num: string; icon: string; desc: string; 
     ],
   },
   Inference: {
-    num: "06",
+    num: "07",
     icon: "🚀",
     color: "#a855f7",
     desc: "Build a production-grade inference engine from scratch: continuous batching, paged KV cache, and disaggregated serving.",
@@ -50,7 +50,7 @@ const chapterDetails: Record<string, { num: string; icon: string; desc: string; 
     ],
   },
   Distillation: {
-    num: "07",
+    num: "08",
     icon: "🔬",
     color: "#14b8a6",
     desc: "Compress a large teacher model's knowledge into a smaller student via logit matching and hidden state alignment.",
@@ -147,6 +147,9 @@ export function ComingSoonPage({ chapter }: ComingSoonPageProps) {
               { path: "/data", label: "01 — Data Pipeline", color: "#6366f1" },
               { path: "/tokenizer", label: "02 — Tokenizer", color: "#10b981" },
               { path: "/pretraining", label: "03 — Pre-training", color: "#0ea5e9" },
+              { path: "/eval", label: "04 — Evaluation", color: "#8b5cf6" },
+              { path: "/sft", label: "05 — SFT", color: "#f59e0b" },
+              { path: "/dpo", label: "06 — DPO", color: "#ec4899" },
             ].map((ch) => (
               <Link
                 key={ch.path}

@@ -7,10 +7,11 @@ const chapters = [
   { path: "/data", label: "Data Pipeline", num: "01", ready: true },
   { path: "/tokenizer", label: "Tokenizer", num: "02", ready: true },
   { path: "/pretraining", label: "Pre-training", num: "03", ready: true },
-  { path: "/sft", label: "SFT", num: "04", ready: false },
-  { path: "/rl", label: "RL Post-training", num: "05", ready: false },
-  { path: "/inference", label: "Inference", num: "06", ready: false },
-  { path: "/distillation", label: "Distillation", num: "07", ready: false },
+  { path: "/eval", label: "Evaluation", num: "04", ready: true },
+  { path: "/sft", label: "SFT", num: "05", ready: true },
+  { path: "/dpo", label: "DPO", num: "06", ready: true },
+  { path: "/inference", label: "Inference", num: "07", ready: false },
+  { path: "/distillation", label: "Distillation", num: "08", ready: false },
 ];
 
 export function Navbar() {
