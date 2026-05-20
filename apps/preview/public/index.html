@@ -2415,14 +2415,14 @@
   }
 
   function runWLAnimation() {
-    if (wlAnimated || !wlInView || wlReal === 0) return;
+    if (wlAnimated || !wlInView) return;
     wlAnimated = true;
     const end = WL_BASE + wlReal + wlAdded;
     const t0  = performance.now();
     (function step(now) {
       const p     = Math.min((now - t0) / 1400, 1);
       const eased = 1 - Math.pow(1 - p, 3);           // ease-out cubic
-      const val   = Math.round(WL_BASE + (end - WL_BASE) * eased);
+      const val   = Math.round(end * eased);           // counts up from 0
       document.querySelectorAll('.wl-count').forEach(el => { el.textContent = val; });
       if (p < 1) requestAnimationFrame(step);
     })(performance.now());
