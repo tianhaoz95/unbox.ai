@@ -487,7 +487,7 @@
     /* ─── MODULES GRID ─── */
     .modules-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 340px));
+      grid-template-columns: repeat(3, 1fr);
       background: transparent;
       gap: 0;
       border-top: 1px solid var(--border);
@@ -770,7 +770,6 @@
       height: 330px;
       background: var(--bg-2);
       border: 1px solid var(--border-hi);
-      border-radius: 8px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -1518,12 +1517,16 @@
       .stat-cell:nth-child(3) { border-top: 1px solid var(--border); border-right: 1px solid var(--border); }
       .stat-cell:last-child  { border-top: 1px solid var(--border); }
       .section { padding: 70px 24px; }
+      .modules-grid { grid-template-columns: repeat(2, 1fr); }
       .why-grid { grid-template-columns: 1fr; }
       .why-card:nth-child(even) { border-right: 1px solid var(--border); }
       .why-card:nth-last-child(-n+2) { border-bottom: 1px solid var(--border); }
       .why-card:last-child { border-bottom: none; }
       .terminal-inner { grid-template-columns: 1fr; gap: 40px; }
       footer { flex-direction: column; gap: 12px; text-align: center; padding: 28px 24px; }
+    }
+    @media (max-width: 560px) {
+      .modules-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
