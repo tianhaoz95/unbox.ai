@@ -9,5 +9,30 @@ service cloud.firestore {
                     && request.resource.data.source is string;
       allow read, update, delete: if false;
     }
+
+    match /comments/{commentId} {
+      // Anyone can read unresolved comments
+      allow read: if true;
+
+      // Only authenticated users can create their own comments
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll([
+                         'chapterId', 'selectedText', 'anchorText',
+                         'comment', 'userId', 'userDisplayName',
+                         'userPhotoURL', 'createdAt', 'resolved'
+                       ])
+                    && request.resource.data.comment is string
+                    && request.resource.data.comment.size() > 0
+                    && request.resource.data.comment.size() < 2000
+                    && request.resource.data.selectedText is string
+                    && request.resource.data.selectedText.size() > 0
+                    && request.resource.data.selectedText.size() < 500
+                    && request.resource.data.resolved == false;
+
+      // Only the author can delete their own comment
+      allow delete: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+    }
   }
 }

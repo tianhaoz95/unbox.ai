@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, BookOpen, ChevronDown } from "lucide-react";
+import { Menu, X, BookOpen, ChevronDown, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { AuthModal } from "./AuthModal";
 
 const chapters = [
   { path: "/data", label: "Data Pipeline", num: "01", ready: true },
@@ -17,7 +19,10 @@ const chapters = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [chaptersOpen, setChaptersOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/5 bg-surface-900/80 backdrop-blur-xl">
@@ -101,7 +106,59 @@ export function Navbar() {
             >
               GitHub
             </a>
+
+            {/* Auth */}
+            {user ? (
+              <div className="relative ml-1">
+                <button
+                  onClick={() => setUserMenuOpen((o) => !o)}
+                  className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-white/5 transition-colors"
+                >
+                  <img
+                    src={user.photoURL ?? ""}
+                    alt=""
+                    className="w-6 h-6 rounded-full"
+                  />
+                  <span className="text-sm text-gray-300 max-w-[80px] truncate">
+                    {user.displayName?.split(" ")[0]}
+                  </span>
+                </button>
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.13 }}
+                      className="absolute right-0 top-full mt-1 w-44 bg-surface-800 border border-white/8 rounded-xl shadow-2xl p-1"
+                      onMouseLeave={() => setUserMenuOpen(false)}
+                    >
+                      <div className="px-3 py-2 border-b border-white/5 mb-1">
+                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                      </div>
+                      <button
+                        onClick={() => { signOut(); setUserMenuOpen(false); }}
+                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                      >
+                        <LogOut size={14} />
+                        Sign out
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAuthOpen(true)}
+                className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <LogIn size={14} />
+                Sign in
+              </button>
+            )}
           </div>
+
+          <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
           {/* Mobile toggle */}
           <button
