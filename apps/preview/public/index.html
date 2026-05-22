@@ -1,0 +1,2923 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>unbox.ai — Build a real LLM from scratch</title>
+  <meta name="description" content="A hands-on course that takes you from a blank tokenizer to a trained 760M parameter model — with readable source code and real results at every step.">
+  <meta property="og:title" content="unbox.ai — Build a real LLM from scratch">
+  <meta property="og:description" content="7 modules. Tokenizer to inference. Readable source code, real 760M model, no black boxes.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #08090e;
+      --bg-2:          #0d0f1a;
+      --bg-3:          #12141f;
+      --border:        #1c1f30;
+      --border-hi:     #2a2e48;
+      --text:          #dde1f0;
+      --text-dim:      #6b7290;
+      --text-dimmer:   #2e3148;
+      --accent:        #4f8eff;
+      --accent-glow:   rgba(79,142,255,0.12);
+      --violet:        #a259f7;
+      --green:         #22d3a0;
+      --red:           #ff4d4d;
+      --mono:          'IBM Plex Mono', monospace;
+      --display:       'Syne', sans-serif;
+      --nav-scrolled:  rgba(8,9,14,0.88);
+    }
+
+    [data-theme="light"] {
+      --bg:            #f4f3ee;
+      --bg-2:          #eae9e3;
+      --bg-3:          #e0dfd8;
+      --border:        #cccac0;
+      --border-hi:     #b4b1a5;
+      --text:          #18182a;
+      --text-dim:      #5a5a72;
+      --text-dimmer:   #b8b5aa;
+      --accent:        #2a6ef5;
+      --accent-glow:   rgba(42,110,245,0.1);
+      --violet:        #7c32e8;
+      --green:         #0f9e73;
+      --red:           #cc2020;
+      --nav-scrolled:  rgba(244,243,238,0.92);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      color-scheme: dark light;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color 0.22s ease, color 0.22s ease;
+    }
+
+    /* ─── NOISE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.018;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 52px;
+      transition: background 0.3s, border-color 0.3s;
+      border-bottom: 1px solid transparent;
+    }
+    nav.scrolled {
+      background: var(--nav-scrolled);
+      backdrop-filter: blur(16px);
+      border-color: var(--border);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    .nav-logo .prompt { color: var(--accent); user-select: none; }
+    .nav-logo .cursor {
+      display: inline-block;
+      width: 7px;
+      height: 15px;
+      background: var(--accent);
+      vertical-align: middle;
+      margin-left: 1px;
+      animation: blink 1.1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .nav-btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(79,142,255,0.4);
+      background: transparent;
+      padding: 9px 20px;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s, border-color 0.18s;
+    }
+    .nav-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-toggle {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border-hi);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      line-height: 1;
+      transition: border-color 0.18s, color 0.18s, background 0.18s;
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .lang-toggle {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 130px 48px 90px;
+      overflow: hidden;
+    }
+
+    #hero-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.3;
+    }
+
+    /* radial vignette */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 50%, transparent, var(--bg) 90%);
+      pointer-events: none;
+    }
+
+    .hero > * { position: relative; z-index: 1; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      border: 1px solid var(--border-hi);
+      background: var(--bg-2);
+      padding: 6px 14px 6px 10px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 36px;
+      animation: fadeUp 0.7s ease both;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+    .hero-title {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(42px, 5.5vw, 72px);
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      margin-bottom: 28px;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+    .hero-title .solid { color: var(--text); }
+    .hero-title .outline {
+      color: transparent;
+      -webkit-text-stroke: 1.5px var(--border-hi);
+    }
+    .hero-title .accent-word { color: var(--accent); }
+
+    .hero-sub {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--text-dim);
+      max-width: 520px;
+      line-height: 1.75;
+      margin-bottom: 48px;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+    .hero-sub code {
+      color: var(--green);
+      background: rgba(34,211,160,0.07);
+      padding: 1px 6px;
+      border-radius: 2px;
+      font-size: 13px;
+    }
+
+    .hero-stack {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dimmer);
+      margin-bottom: 40px;
+      animation: fadeUp 0.7s ease 0.25s both;
+    }
+    .hero-stack .step {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      color: var(--text-dimmer);
+      transition: border-color 0.4s ease, color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+    }
+    .hero-stack .arrow {
+      padding: 0 4px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dimmer);
+      transition: color 0.4s ease, border-color 0.4s ease;
+    }
+    .hero-stack .step.done {
+      border-color: var(--border-hi);
+      color: var(--text-dim);
+    }
+    .hero-stack .arrow.done {
+      color: var(--border-hi);
+      border-color: var(--border-hi);
+    }
+    @keyframes stepGlow {
+      0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
+      40%  { box-shadow: 0 0 10px 3px var(--accent-glow); }
+      100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+    }
+    .hero-stack .step.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+      animation: stepGlow 0.95s ease-out;
+    }
+    .hero-stack .arrow.active {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .form-wrap {
+      display: flex;
+      width: 100%;
+      max-width: 440px;
+      animation: fadeUp 0.7s ease 0.3s both;
+    }
+    .email-input {
+      flex: 1;
+      background: var(--bg-2);
+      border: 1px solid var(--border-hi);
+      border-right: none;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 14px 18px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .email-input::placeholder { color: var(--text-dimmer); }
+    .email-input:focus { border-color: var(--accent); }
+    .email-input.error { border-color: var(--red) !important; }
+    .submit-btn {
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: none;
+      padding: 14px 22px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.18s;
+      min-width: 140px;
+    }
+    .submit-btn:hover:not(:disabled) { opacity: 0.82; }
+    .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .hero-note {
+      margin-top: 14px;
+      font-size: 10px;
+      color: var(--text-dimmer);
+      letter-spacing: 0.06em;
+      animation: fadeUp 0.7s ease 0.35s both;
+    }
+
+    .success-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .success-state.show { display: flex; }
+    .success-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border: 1px solid rgba(34,211,160,0.3);
+      background: rgba(34,211,160,0.05);
+      color: var(--green);
+      font-size: 13px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:none; }
+    }
+
+    /* ─── SCROLL CUE ─── */
+    .scroll-cue {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .scroll-cue span {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dimmer);
+    }
+    .scroll-line {
+      width: 1px;
+      height: 36px;
+      background: linear-gradient(to bottom, var(--border-hi), transparent);
+      animation: drip 1.6s ease-in-out infinite;
+    }
+    @keyframes drip {
+      0%   { transform:scaleY(0); transform-origin:top; }
+      49%  { transform:scaleY(1); transform-origin:top; }
+      50%  { transform:scaleY(1); transform-origin:bottom; }
+      100% { transform:scaleY(0); transform-origin:bottom; }
+    }
+
+    /* ─── STATS BAR ─── */
+    .stats-bar {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-2);
+    }
+    .stats-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 52px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .stat-cell {
+      padding: 40px 24px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 38px;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .stat-val em { color: var(--accent); font-style: normal; }
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+
+    /* ─── SHARED SECTION ─── */
+    .section {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 100px 52px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .eyebrow::after {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.4;
+    }
+
+    .section-h {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(30px, 4.5vw, 52px);
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      margin-bottom: 18px;
+    }
+
+    .section-p {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.75;
+      max-width: 580px;
+      margin-bottom: 64px;
+    }
+
+    /* ─── MODULES GRID ─── */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: transparent;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+    }
+
+    .mod-card {
+      background: var(--bg);
+      padding: 32px 28px 28px;
+      position: relative;
+      cursor: default;
+      transition: background 0.2s;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .mod-card::after {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--violet));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.35s ease;
+    }
+    .mod-card:hover { background: var(--bg-2); }
+    .mod-card:hover::after { transform: scaleX(1); }
+
+    .mod-path {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dimmer);
+      letter-spacing: 0.04em;
+      margin-bottom: 20px;
+    }
+    .mod-path .dir { color: rgba(79,142,255,0.5); }
+
+    .mod-num {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 52px;
+      color: var(--text-dimmer);
+      line-height: 1;
+      letter-spacing: -0.06em;
+      margin-bottom: 6px;
+    }
+
+    .mod-name {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .mod-desc {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    .mod-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--green);
+      background: rgba(34,211,160,0.06);
+      border: 1px solid rgba(34,211,160,0.18);
+      padding: 3px 9px;
+    }
+
+    /* ─── WHY GRID ─── */
+    .why-section { border-top: 1px solid var(--border); }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid var(--border);
+    }
+
+    .why-card {
+      padding: 40px 36px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      transition: background 0.2s;
+    }
+    .why-card:nth-child(even) { border-right: none; }
+    .why-card:nth-last-child(-n+2) { border-bottom: none; }
+    .why-card:hover { background: var(--bg-2); }
+
+    .why-icon {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--border-hi);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .why-card:hover .why-icon { border-color: var(--accent); }
+
+    .why-title {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 17px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .why-desc {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    /* ─── TERMINAL BLOCK ─── */
+    .terminal-section {
+      border-top: 1px solid var(--border);
+      background: var(--bg-2);
+    }
+    .terminal-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 80px 52px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .terminal-left .section-h { margin-bottom: 16px; }
+    .terminal-left .section-p { margin-bottom: 0; }
+
+    .terminal-window {
+      background: var(--bg);
+      border: 1px solid var(--border-hi);
+      overflow: hidden;
+    }
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-2);
+    }
+    .terminal-bar .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .terminal-bar .title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dimmer);
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .terminal-body {
+      padding: 24px 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--text-dim);
+    }
+    .t-line { display: flex; gap: 10px; }
+    .t-ps { color: var(--accent); flex-shrink: 0; }
+    .t-cmd { color: var(--text); }
+    .t-out { color: var(--text-dim); padding-left: 20px; }
+    .t-green { color: var(--green); }
+    .t-violet { color: var(--violet); }
+    .t-dim { color: var(--text-dimmer); }
+
+    /* ─── WAITLIST / CTA ─── */
+    .cta-section {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 110px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 100%, rgba(79,142,255,0.06), transparent),
+        radial-gradient(ellipse 50% 40% at 80% 0%, rgba(162,89,247,0.05), transparent);
+      pointer-events: none;
+    }
+    .cta-section > * { position: relative; z-index: 1; }
+    .cta-section .eyebrow { justify-content: center; }
+    .cta-section .section-h { margin-bottom: 16px; }
+    .cta-section .section-p { margin: 0 auto 40px; }
+    .cta-form-wrap {
+      display: flex;
+      max-width: 440px;
+      margin: 0 auto 14px;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 52px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 100%;
+    }
+    .footer-logo {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .footer-logo strong { color: var(--text); }
+    .footer-copy {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dimmer);
+    }
+
+    /* ─── FADE-IN OBSERVER ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.in { opacity: 1; transform: none; }
+
+    /* ─── HERO 2-COLUMN ─── */
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      max-width: 1100px;
+      width: 100%;
+      align-items: center;
+    }
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+    }
+    .hero-text .hero-stack { align-self: flex-start; }
+    .hero-text .form-wrap  { max-width: 400px; }
+    .hero-text .hero-note  { text-align: left; }
+    .hero-text .success-state { align-items: flex-start; }
+
+    /* ─── ARCH DIAGRAM ─── */
+    .hero-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      width: 100%;
+    }
+    .arch {
+      display: flex;
+      flex-direction: column;
+      width: 200px;
+      flex-shrink: 0;
+      animation: fadeUp 0.7s ease 0.4s both;
+    }
+
+    /* ─── STAGE VISUALISER ─── */
+    .stage-visualiser {
+      width: 280px;
+      height: 330px;
+      background: var(--bg-2);
+      border: 1px solid var(--border-hi);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.35s ease, box-shadow 0.35s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      animation: fadeUp 0.7s ease 0.45s both;
+      flex-shrink: 0;
+    }
+    .stage-visualiser::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, var(--accent-glow), transparent 70%);
+      pointer-events: none;
+      opacity: 0.8;
+      transition: opacity 0.5s ease;
+    }
+    .vis-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.01);
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      position: relative;
+      z-index: 2;
+    }
+    .vis-subtitle {
+      font-family: var(--mono);
+      font-size: 8px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      opacity: 0.8;
+    }
+    .vis-title {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+    .vis-content {
+      flex: 1;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 2;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .vis-stage-panel {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      animation: visPanelFadeIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    .vis-stage-panel.active {
+      display: flex;
+    }
+    @keyframes visPanelFadeIn {
+      from { opacity: 0; transform: translateY(6px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Stage 0: Tokenizer styles */
+    .bpe-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      justify-content: space-between;
+    }
+    .bpe-word-row {
+      display: flex;
+      gap: 5px;
+      height: 30px;
+      align-items: center;
+    }
+    .bpe-char {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 3px 7px;
+      border-radius: 4px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .bpe-char.highlight {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+      transform: scale(1.08);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+    .bpe-char.merged {
+      background: rgba(162, 89, 247, 0.1);
+      border-color: var(--violet);
+      color: var(--violet);
+      box-shadow: 0 0 6px rgba(162, 89, 247, 0.15);
+    }
+    .bpe-arrow {
+      font-size: 11px;
+      color: var(--text-dimmer);
+      line-height: 1;
+      margin: 2px 0;
+    }
+    .bpe-merge-info {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      min-height: 14px;
+      text-align: center;
+    }
+    .bpe-vocab {
+      width: 100%;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      padding: 8px;
+      border-radius: 6px;
+      font-family: var(--mono);
+    }
+    .bpe-vocab-title {
+      font-size: 8px;
+      color: var(--text-dimmer);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 3px;
+    }
+    .bpe-vocab-item {
+      font-size: 9px;
+      color: var(--text-dimmer);
+      padding: 2px 4px;
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+    .bpe-vocab-item.active {
+      color: var(--accent);
+      background: var(--accent-glow);
+      font-weight: 500;
+      padding-left: 6px;
+    }
+
+    /* Stage 1: Data Pipeline styles */
+    .pipe-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      justify-content: space-between;
+    }
+    .pipe-docs {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .pipe-doc {
+      font-size: 9px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      display: flex;
+      justify-content: space-between;
+    }
+    .pipe-arrow {
+      font-size: 8px;
+      color: var(--text-dimmer);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 2px 0;
+    }
+    .pipe-packed-seq {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 3px;
+      width: 100%;
+    }
+    .pipe-token {
+      aspect-ratio: 1.3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-family: var(--mono);
+      border-radius: 4px;
+      border: 1px solid;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pipe-token.doc-a {
+      color: var(--accent);
+      background: rgba(79, 142, 255, 0.08);
+      border-color: rgba(79, 142, 255, 0.25);
+    }
+    .pipe-token.doc-b {
+      color: var(--violet);
+      background: rgba(162, 89, 247, 0.08);
+      border-color: rgba(162, 89, 247, 0.25);
+    }
+    .pipe-token.doc-c {
+      color: var(--green);
+      background: rgba(34, 211, 160, 0.08);
+      border-color: rgba(34, 211, 160, 0.25);
+    }
+    .pipe-token.eos {
+      color: var(--red);
+      background: rgba(255, 77, 77, 0.08);
+      border-color: rgba(255, 77, 77, 0.25);
+      font-size: 7px;
+      font-weight: 500;
+    }
+    .pipe-batch-box {
+      width: 100%;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      padding: 6px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .pipe-batch-label {
+      font-size: 9px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    /* Stage 2: Pretraining styles */
+    .attn-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      justify-content: space-between;
+    }
+    .attn-query-info {
+      font-size: 9px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      text-align: center;
+    }
+    .attn-words {
+      display: flex;
+      gap: 10px;
+      margin: 4px 0;
+    }
+    .attn-word {
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--text-dimmer);
+      transition: color 0.25s ease;
+    }
+    .attn-word.query-active {
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .attn-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      width: 100%;
+      background: var(--bg-3);
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .attn-cell {
+      aspect-ratio: 1.1;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-family: var(--mono);
+      color: var(--bg);
+      font-weight: 600;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+    .attn-cell.active-cell {
+      background: var(--violet);
+      color: var(--bg);
+      animation: attnCellGlow 1.4s infinite ease-in-out;
+    }
+    @keyframes attnCellGlow {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 5px var(--violet); }
+    }
+    .attn-legend {
+      display: flex;
+      gap: 10px;
+      font-size: 8px;
+      font-family: var(--mono);
+      color: var(--text-dimmer);
+    }
+    .attn-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .attn-legend-color {
+      width: 6px;
+      height: 6px;
+      border-radius: 1px;
+    }
+
+    /* Stage 3: Fine-tuning styles */
+    .sft-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+      justify-content: center;
+    }
+    .sft-bubble {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 6px;
+      position: relative;
+      font-family: var(--mono);
+    }
+    .sft-bubble.sft-user {
+      border-left: 2px solid var(--text-dim);
+    }
+    .sft-bubble.sft-assistant {
+      border-left: 2px solid var(--green);
+    }
+    .sft-sender {
+      font-size: 8px;
+      color: var(--text-dimmer);
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+    .sft-text {
+      font-size: 10px;
+      color: var(--text);
+      line-height: 1.35;
+    }
+    .sft-mask-badge {
+      position: absolute;
+      top: -7px;
+      right: 6px;
+      font-size: 7px;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-family: var(--mono);
+    }
+    .user-badge {
+      background: rgba(255, 77, 77, 0.08);
+      border: 1px solid rgba(255, 77, 77, 0.2);
+      color: var(--red);
+    }
+    .assistant-badge {
+      background: rgba(34, 211, 160, 0.08);
+      border: 1px solid rgba(34, 211, 160, 0.2);
+      color: var(--green);
+    }
+
+    /* Stage 4: RL Post-training styles */
+    .rl-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .rl-prompt {
+      font-size: 9px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+    .rl-candidate {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-family: var(--mono);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      transition: all 0.35s ease;
+    }
+    .rl-candidate.chosen {
+      border-color: rgba(34, 211, 160, 0.15);
+    }
+    .rl-candidate.chosen.glowing {
+      border-color: var(--green);
+      box-shadow: 0 0 6px rgba(34, 211, 160, 0.15);
+    }
+    .rl-candidate.rejected {
+      border-color: rgba(255, 77, 77, 0.15);
+    }
+    .rl-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8px;
+    }
+    .rl-tag {
+      font-weight: bold;
+    }
+    .chosen-tag { color: var(--green); }
+    .rejected-tag { color: var(--red); }
+    .rl-prob {
+      color: var(--text-dimmer);
+    }
+    .rl-body {
+      font-size: 9px;
+      color: var(--text-dim);
+      line-height: 1.3;
+    }
+    .rl-bar-container {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .rl-bar {
+      height: 100%;
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .chosen-bar { background: var(--green); }
+    .rejected-bar { background: var(--red); }
+
+    /* Stage 5: Distillation styles */
+    .distill-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .distill-labels {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 8px;
+      font-family: var(--mono);
+    }
+    .distill-chart {
+      display: flex;
+      height: 110px;
+      width: 100%;
+      align-items: flex-end;
+      justify-content: space-around;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+      margin: 8px 0;
+    }
+    .distill-bar-pair {
+      display: flex;
+      gap: 2px;
+      height: 100%;
+      align-items: flex-end;
+    }
+    .distill-bar {
+      width: 10px;
+      border-radius: 2px 2px 0 0;
+      transition: height 0.5s ease;
+    }
+    .teacher-bar {
+      background: var(--accent);
+      opacity: 0.3;
+    }
+    .student-bar {
+      background: var(--violet);
+    }
+    .distill-info {
+      font-size: 9px;
+      font-family: var(--mono);
+      color: var(--violet);
+    }
+
+    /* Stage 6: Inference styles */
+    .infer-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .infer-reqs {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 8px;
+      font-family: var(--mono);
+    }
+    .infer-req {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .infer-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+    .infer-dot.dot-b { background: var(--accent); }
+    .infer-dot.dot-v { background: var(--violet); }
+    .infer-grid-title {
+      font-size: 8px;
+      color: var(--text-dimmer);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 6px;
+      margin-bottom: 4px;
+    }
+    .infer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3px;
+      width: 130px;
+      margin-bottom: 4px;
+    }
+    .infer-block {
+      aspect-ratio: 1.1;
+      border: 1px dashed var(--border-hi);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      font-family: var(--mono);
+      color: var(--text-dimmer);
+      transition: all 0.3s ease;
+    }
+    .infer-block.block-b {
+      background: rgba(79, 142, 255, 0.12);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+    .infer-block.block-v {
+      background: rgba(162, 89, 247, 0.12);
+      border: 1px solid var(--violet);
+      color: var(--violet);
+    }
+    .infer-meta {
+      font-size: 8px;
+      font-family: var(--mono);
+      color: var(--text-dimmer);
+    }
+
+    /* Input token chips */
+    .arch-tokens {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      padding: 0 0 10px 20px;
+    }
+    .arch-tok {
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 3px 6px;
+      border-radius: 3px;
+      border: 1px solid;
+    }
+    .arch-tok:nth-child(1) { color:var(--accent);  border-color:rgba(79,142,255,0.4);  background:rgba(79,142,255,0.08); }
+    .arch-tok:nth-child(2) { color:var(--violet);  border-color:rgba(162,89,247,0.35); background:rgba(162,89,247,0.07); }
+    .arch-tok:nth-child(3) { color:var(--green);   border-color:rgba(34,211,160,0.35); background:rgba(34,211,160,0.07); }
+    .arch-tok:nth-child(4) { color:var(--text-dim);border-color:var(--border);         background:transparent; }
+    .arch-tok:nth-child(5) { color:var(--text-dimmer);border-color:var(--border);      background:transparent; }
+
+    /* Spine + packet */
+    .arch-spine {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      padding-left: 20px;
+    }
+    .arch-spine::before {
+      content: '';
+      position: absolute;
+      left: 6px; top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--border-hi) 6%, var(--border-hi) 94%, transparent);
+    }
+    .arch-packet {
+      position: absolute;
+      left: 6px; top: 0;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent), 0 0 22px rgba(79,142,255,0.4);
+      transform: translateX(-50%) translateY(-50%);
+      transition: top 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Nodes */
+    .arch-node {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px 9px 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      margin-bottom: 2px;
+      position: relative;
+      transition: border-color 0.35s, background 0.35s;
+      overflow: hidden;
+    }
+    .arch-node::before {
+      content: '';
+      position: absolute;
+      left: -14px; top: 50%;
+      transform: translateY(-50%);
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--border-hi);
+      transition: background 0.35s, border-color 0.35s, box-shadow 0.35s;
+    }
+    /* Scan shimmer on active */
+    @keyframes archScan {
+      from { transform: translateX(-100%); }
+      to   { transform: translateX(350%); }
+    }
+    .arch-node::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 30%;
+      background: linear-gradient(90deg, transparent, rgba(79,142,255,0.12), transparent);
+      transform: translateX(-100%);
+      pointer-events: none;
+    }
+    .arch-node.active::after { animation: archScan 1s ease-in-out; }
+
+    @keyframes nodePulse {
+      0%,100% { box-shadow: none; }
+      50%      { box-shadow: 0 0 0 4px rgba(79,142,255,0.1); }
+    }
+    .arch-node.active {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      animation: nodePulse 1.8s ease-in-out infinite;
+    }
+    .arch-node.active::before {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .arch-node-num {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent);
+      opacity: 0.4;
+      flex-shrink: 0;
+      width: 16px;
+      transition: opacity 0.35s;
+    }
+    .arch-node.active .arch-node-num { opacity: 1; }
+    .arch-node-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      transition: color 0.35s;
+      flex: 1;
+    }
+    .arch-node.active .arch-node-label { color: var(--text); }
+    .arch-node-metric {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
+    }
+    .arch-node.active .arch-node-metric { opacity: 0.65; }
+
+    /* Output foot */
+    .arch-foot {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0 0 20px;
+    }
+    .arch-loss { width: 64px; height: 18px; flex-shrink: 0; }
+    .arch-foot-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--green);
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── MODULE ICONS ─── */
+    .mod-icon {
+      position: absolute;
+      top: 24px; right: 22px;
+      width: 52px; height: 40px;
+      opacity: 0.3;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .mod-card:hover .mod-icon { opacity: 0.6; }
+
+    /* ─── WAITLIST COUNTER ─── */
+    .wl-counter {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dimmer);
+      margin-top: 10px;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .wl-counter strong {
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .wl-avatars {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .wl-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .wl-avatar + .wl-avatar { margin-left: -7px; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1200px) {
+      .hero-inner { gap: 40px; }
+      .stage-visualiser { display: none; }
+    }
+
+    @media (max-width: 900px) {
+      nav { padding: 18px 24px; }
+      .hero { padding: 110px 24px 80px; }
+      .hero-inner { grid-template-columns: 1fr; gap: 0; text-align: center; }
+      .hero-text { align-items: center; }
+      .hero-text .hero-note { text-align: center; }
+      .hero-text .success-state { align-items: center; }
+      .hero-text .hero-stack { align-self: center; }
+      .hero-visual { display: none; }
+      .hero-stack { flex-wrap: wrap; justify-content: center; }
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+      .stat-cell { padding: 28px 20px; }
+      .stat-cell:nth-child(2) { border-right: none; }
+      .stat-cell:nth-child(3) { border-top: 1px solid var(--border); border-right: 1px solid var(--border); }
+      .stat-cell:last-child  { border-top: 1px solid var(--border); }
+      .section { padding: 70px 24px; }
+      .modules-grid { grid-template-columns: repeat(2, 1fr); }
+      .why-grid { grid-template-columns: 1fr; }
+      .why-card:nth-child(even) { border-right: 1px solid var(--border); }
+      .why-card:nth-last-child(-n+2) { border-bottom: 1px solid var(--border); }
+      .why-card:last-child { border-bottom: none; }
+      .terminal-inner { grid-template-columns: 1fr; gap: 40px; }
+      footer { flex-direction: column; gap: 12px; text-align: center; padding: 28px 24px; }
+    }
+    @media (max-width: 560px) {
+      .modules-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav id="nav">
+  <div class="nav-logo">
+    <span class="prompt">$</span>&nbsp;unbox.ai<span class="cursor"></span>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle lang-toggle" id="lang-toggle" onclick="toggleLanguage()" aria-label="Switch language">中</button>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">☀</button>
+    <button class="nav-btn" id="nav-waitlist-btn" onclick="scrollToWaitlist()" data-i18n="nav-btn">Join waitlist</button>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<div class="hero">
+  <canvas id="hero-canvas"></canvas>
+
+  <div class="hero-inner">
+
+    <!-- text column -->
+    <div class="hero-text">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        <span data-i18n="hero-badge">7-module LLM course &middot; building in public</span>
+      </div>
+
+      <h1 class="hero-title">
+        <div class="solid" data-i18n="hero-title-1">Build a real LLM.</div>
+        <div class="solid" data-i18n="hero-title-2">Understand <span class="accent-word">every line.</span></div>
+      </h1>
+
+      <p class="hero-sub" data-i18n="hero-sub">
+        A hands-on course that takes you from a blank tokenizer to a trained
+        <code>760M parameter model</code> — with readable source code and
+        real results at every step. No black boxes.
+      </p>
+
+      <div class="form-wrap" id="hero-form">
+        <input class="email-input" id="hero-email" type="email" placeholder="your@email.com" autocomplete="email" data-i18n-placeholder="email-placeholder">
+        <button class="submit-btn" id="hero-btn" onclick="handleSignup('hero')" data-i18n="hero-btn">Get early access</button>
+      </div>
+      <div class="success-state" id="hero-success">
+        <div class="success-box">
+          <span>✓</span> <span data-i18n="success-msg">You&rsquo;re on the list &mdash; we&rsquo;ll be in touch.</span>
+        </div>
+      </div>
+      <p class="hero-note" data-i18n="hero-note">No spam &middot; notify-only &middot; unsubscribe any time</p>
+      <p class="wl-counter"><span class="wl-avatars" aria-hidden="true"><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3a6fd8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#18a87e"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#7c42c8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#b84f1a"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3d5080"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg></span><span><span data-i18n="wl-prefix">Join</span> <strong><span class="wl-count">312</span>+</strong> <span data-i18n="wl-suffix">engineers on the waitlist</span></span></p>
+    </div>
+
+    <!-- architecture diagram column -->
+    <div class="hero-visual" aria-hidden="true">
+      <div class="arch">
+        <!-- Input tokens -->
+        <div class="arch-tokens">
+          <span class="arch-tok">The</span>
+          <span class="arch-tok">quick</span>
+          <span class="arch-tok">brown</span>
+          <span class="arch-tok">fox</span>
+          <span class="arch-tok">&hellip;</span>
+        </div>
+        <div class="arch-spine">
+          <!-- Traveling packet -->
+          <div class="arch-packet" id="arch-packet"></div>
+          <div class="arch-node" id="anode-0">
+            <span class="arch-node-num">01</span>
+            <span class="arch-node-label">Tokenizer</span>
+            <span class="arch-node-metric">32K vocab</span>
+          </div>
+          <div class="arch-node" id="anode-1">
+            <span class="arch-node-num">02</span>
+            <span class="arch-node-label">Data Pipeline</span>
+            <span class="arch-node-metric">10B tokens</span>
+          </div>
+          <div class="arch-node" id="anode-2">
+            <span class="arch-node-num">03</span>
+            <span class="arch-node-label">Pretraining</span>
+            <span class="arch-node-metric">760M params</span>
+          </div>
+          <div class="arch-node" id="anode-3">
+            <span class="arch-node-num">04</span>
+            <span class="arch-node-label">Fine-tuning</span>
+            <span class="arch-node-metric">chat template</span>
+          </div>
+          <div class="arch-node" id="anode-4">
+            <span class="arch-node-num">05</span>
+            <span class="arch-node-label">RL Post-training</span>
+            <span class="arch-node-metric">DPO · PPO</span>
+          </div>
+          <div class="arch-node" id="anode-5">
+            <span class="arch-node-num">06</span>
+            <span class="arch-node-label">Distillation</span>
+            <span class="arch-node-metric">4× smaller</span>
+          </div>
+          <div class="arch-node" id="anode-6">
+            <span class="arch-node-num">07</span>
+            <span class="arch-node-label">Inference Engine</span>
+            <span class="arch-node-metric">paged KV</span>
+          </div>
+        </div>
+        <!-- Output with mini loss curve -->
+        <div class="arch-foot">
+          <svg class="arch-loss" viewBox="0 0 64 18" fill="none">
+            <path d="M0 16 C8 13,16 9,28 5 S50 2,64 1" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+            <circle cx="64" cy="1" r="2.5" fill="var(--green)" opacity="0.9"/>
+          </svg>
+          <span class="arch-foot-label">760M &middot; step 15k &middot; trained ✓</span>
+        </div>
+      </div>
+
+      <!-- stage dynamic visualiser panel -->
+      <div class="stage-visualiser">
+        <div class="vis-header">
+          <div class="vis-subtitle" id="vis-stage-tag">Stage 01</div>
+          <div class="vis-title" id="vis-stage-title">BPE Tokenizer</div>
+        </div>
+        <div class="vis-content">
+          <!-- Stage 0: Tokenizer -->
+          <div class="vis-stage-panel active" id="vis-panel-0">
+            <div class="bpe-container">
+              <div class="bpe-word-row" id="bpe-words">
+                <span class="bpe-char">u</span>
+                <span class="bpe-char">n</span>
+                <span class="bpe-char">b</span>
+                <span class="bpe-char">o</span>
+                <span class="bpe-char">x</span>
+              </div>
+              <div class="bpe-arrow">↓</div>
+              <div class="bpe-merge-info" id="bpe-info">Merge: 'u' + 'n' → 'un'</div>
+              <div class="bpe-vocab">
+                <div class="bpe-vocab-title">Vocabulary Merges</div>
+                <div class="bpe-vocab-item active" id="bpe-v-1">1. u + n → un [ID: 258]</div>
+                <div class="bpe-vocab-item" id="bpe-v-2">2. b + o → bo [ID: 259]</div>
+                <div class="bpe-vocab-item" id="bpe-v-3">3. bo + x → box [ID: 260]</div>
+                <div class="bpe-vocab-item" id="bpe-v-4">4. un + box → unbox [ID: 261]</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 1: Data Pipeline -->
+          <div class="vis-stage-panel" id="vis-panel-1">
+            <div class="pipe-container">
+              <div class="pipe-docs">
+                <div class="pipe-doc" style="color: var(--accent);"><span>Doc A (3 tokens)</span><span style="opacity: 0.5;">[w=0]</span></div>
+                <div class="pipe-doc" style="color: var(--violet);"><span>Doc B (4 tokens)</span><span style="opacity: 0.5;">[w=1]</span></div>
+                <div class="pipe-doc" style="color: var(--green);"><span>Doc C (2 tokens)</span><span style="opacity: 0.5;">[w=2]</span></div>
+              </div>
+              <div class="pipe-arrow">↓ Packed Continuous Stream ↓</div>
+              <div class="pipe-packed-seq" id="pipe-packed">
+                <div class="pipe-token doc-a">T1</div>
+                <div class="pipe-token doc-a">T2</div>
+                <div class="pipe-token doc-a">T3</div>
+                <div class="pipe-token eos">&lt;|eos|&gt;</div>
+                <div class="pipe-token doc-b">T1</div>
+                <div class="pipe-token doc-b">T2</div>
+                <div class="pipe-token doc-b">T3</div>
+                <div class="pipe-token doc-b">T4</div>
+                <div class="pipe-token eos">&lt;|eos|&gt;</div>
+                <div class="pipe-token doc-c">T1</div>
+              </div>
+              <div class="pipe-batch-box">
+                <span class="pipe-batch-label">Batch: 2 &times; Seq Len: 10 (No Padding)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 2: Pretraining -->
+          <div class="vis-stage-panel" id="vis-panel-2">
+            <div class="attn-container">
+              <div class="attn-query-info" id="attn-info">Query: "LLM" attending to sentence</div>
+              <div class="attn-words">
+                <span class="attn-word" id="attn-w-0">Build</span>
+                <span class="attn-word" id="attn-w-1">a</span>
+                <span class="attn-word" id="attn-w-2">real</span>
+                <span class="attn-word query-active" id="attn-w-3">LLM</span>
+              </div>
+              <div class="attn-grid" id="attn-grid-cells">
+                <div class="attn-cell" style="opacity: 0.9;">0.90</div>
+                <div class="attn-cell" style="opacity: 0.05;">0.05</div>
+                <div class="attn-cell" style="opacity: 0.02;">0.02</div>
+                <div class="attn-cell" style="opacity: 0.03;">0.03</div>
+                
+                <div class="attn-cell" style="opacity: 0.1;">0.10</div>
+                <div class="attn-cell" style="opacity: 0.8;">0.80</div>
+                <div class="attn-cell" style="opacity: 0.05;">0.05</div>
+                <div class="attn-cell" style="opacity: 0.05;">0.05</div>
+                
+                <div class="attn-cell" style="opacity: 0.15;">0.15</div>
+                <div class="attn-cell" style="opacity: 0.05;">0.05</div>
+                <div class="attn-cell" style="opacity: 0.75;">0.75</div>
+                <div class="attn-cell" style="opacity: 0.05;">0.05</div>
+                
+                <div class="attn-cell active-cell" style="opacity: 0.45;">0.45</div>
+                <div class="attn-cell" style="opacity: 0.05;">0.05</div>
+                <div class="attn-cell active-cell" style="opacity: 0.4;">0.40</div>
+                <div class="attn-cell" style="opacity: 0.1;">0.10</div>
+              </div>
+              <div class="attn-legend">
+                <span class="attn-legend-item"><span class="attn-legend-color" style="background: var(--violet);"></span> High Attn</span>
+                <span class="attn-legend-item"><span class="attn-legend-color" style="background: var(--accent); opacity: 0.4;"></span> Low Attn</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 3: Fine-tuning -->
+          <div class="vis-stage-panel" id="vis-panel-3">
+            <div class="sft-container">
+              <div class="sft-bubble sft-user">
+                <div class="sft-sender">USER</div>
+                <div class="sft-text">What is an LLM?</div>
+                <div class="sft-mask-badge user-badge">Loss Masked [w=0]</div>
+              </div>
+              <div class="sft-bubble sft-assistant">
+                <div class="sft-sender" style="color: var(--green);">ASSISTANT</div>
+                <div class="sft-text" id="sft-assistant-text">An autoregressive transformer...</div>
+                <div class="sft-mask-badge assistant-badge">Loss Active [w=1]</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 4: RL Post-training -->
+          <div class="vis-stage-panel" id="vis-panel-4">
+            <div class="rl-container">
+              <div class="rl-prompt">Prompt: "Explain RoPE attention"</div>
+              
+              <div class="rl-candidate chosen" id="rl-cand-chosen">
+                <div class="rl-header">
+                  <span class="rl-tag chosen-tag">✓ CHOSEN (Preferred)</span>
+                  <span class="rl-prob" id="rl-chosen-prob">Prob: 75%</span>
+                </div>
+                <div class="rl-body">Rotates query/key vectors in-place...</div>
+                <div class="rl-bar-container"><div class="rl-bar chosen-bar" id="rl-chosen-bar" style="width: 75%;"></div></div>
+              </div>
+
+              <div class="rl-candidate rejected" id="rl-cand-rejected">
+                <div class="rl-header">
+                  <span class="rl-tag rejected-tag">✗ REJECTED</span>
+                  <span class="rl-prob" id="rl-rejected-prob">Prob: 25%</span>
+                </div>
+                <div class="rl-body">It is a standard visual optimizer...</div>
+                <div class="rl-bar-container"><div class="rl-bar rejected-bar" id="rl-rejected-bar" style="width: 25%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage 5: Distillation -->
+          <div class="vis-stage-panel" id="vis-panel-5">
+            <div class="distill-container">
+              <div class="distill-labels">
+                <span style="color: var(--accent);">Teacher (3B)</span>
+                <span style="color: var(--violet);">Student (760M)</span>
+              </div>
+              <div class="distill-chart">
+                <div class="distill-bar-pair">
+                  <div class="distill-bar teacher-bar" style="height: 80%;"></div>
+                  <div class="distill-bar student-bar" id="distill-s-0" style="height: 30%;"></div>
+                </div>
+                <div class="distill-bar-pair">
+                  <div class="distill-bar teacher-bar" style="height: 50%;"></div>
+                  <div class="distill-bar student-bar" id="distill-s-1" style="height: 70%;"></div>
+                </div>
+                <div class="distill-bar-pair">
+                  <div class="distill-bar teacher-bar" style="height: 95%;"></div>
+                  <div class="distill-bar student-bar" id="distill-s-2" style="height: 40%;"></div>
+                </div>
+                <div class="distill-bar-pair">
+                  <div class="distill-bar teacher-bar" style="height: 20%;"></div>
+                  <div class="distill-bar student-bar" id="distill-s-3" style="height: 60%;"></div>
+                </div>
+              </div>
+              <div class="distill-info" id="distill-loss">KL Divergence Loss: 0.421</div>
+            </div>
+          </div>
+
+          <!-- Stage 6: Inference serving -->
+          <div class="vis-stage-panel" id="vis-panel-6">
+            <div class="infer-container">
+              <div class="infer-reqs">
+                <div class="infer-req"><span class="infer-dot dot-b"></span> Req 1 (Active)</div>
+                <div class="infer-req"><span class="infer-dot dot-v"></span> Req 2 (Active)</div>
+              </div>
+              <div class="infer-grid-title">Paged Memory Blocks (Radix-Mapped)</div>
+              <div class="infer-grid">
+                <div class="infer-block block-b" id="ib-0">B0</div>
+                <div class="infer-block block-b" id="ib-1">B1</div>
+                <div class="infer-block block-v" id="ib-2">B0</div>
+                <div class="infer-block" id="ib-3"></div>
+                
+                <div class="infer-block block-b" id="ib-4">B2</div>
+                <div class="infer-block" id="ib-5"></div>
+                <div class="infer-block block-v" id="ib-6">B1</div>
+                <div class="infer-block" id="ib-7"></div>
+                
+                <div class="infer-block" id="ib-8"></div>
+                <div class="infer-block block-b" id="ib-9">B3</div>
+                <div class="infer-block" id="ib-10"></div>
+                <div class="infer-block" id="ib-11"></div>
+                
+                <div class="infer-block" id="ib-12"></div>
+                <div class="infer-block" id="ib-13"></div>
+                <div class="infer-block block-v" id="ib-14">B2</div>
+                <div class="infer-block" id="ib-15"></div>
+              </div>
+              <div class="infer-meta">Memory Allocation: <span id="infer-mem">62%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /hero-inner -->
+
+  <div class="scroll-cue">
+    <div class="scroll-line"></div>
+  </div>
+</div>
+
+<!-- ─── STATS BAR ─── -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-cell reveal">
+      <div class="stat-val">760<em>M</em></div>
+      <div class="stat-label" data-i18n="stats-1-lbl">params trained from scratch</div>
+    </div>
+    <div class="stat-cell reveal">
+      <div class="stat-val">7</div>
+      <div class="stat-label" data-i18n="stats-2-lbl">end-to-end modules</div>
+    </div>
+    <div class="stat-cell reveal">
+      <div class="stat-val">10<em>B+</em></div>
+      <div class="stat-label" data-i18n="stats-3-lbl">training tokens (FineWeb-Edu)</div>
+    </div>
+    <div class="stat-cell reveal">
+      <div class="stat-val">0</div>
+      <div class="stat-label" data-i18n="stats-4-lbl">black boxes</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODULES ─── -->
+<div class="section">
+  <div class="eyebrow reveal" data-i18n="mod-eyebrow">curriculum</div>
+  <h2 class="section-h reveal" data-i18n="mod-h">Seven modules.<br>The full stack.</h2>
+  <p class="section-p reveal" data-i18n="mod-p">
+    Each module is a self-contained, readable implementation — one file you can open,
+    read top-to-bottom, and modify. Import what you need. Swap what you want.
+  </p>
+
+  <div class="modules-grid">
+    <div class="mod-card reveal">
+      <!-- icon: colored token boxes -->
+      <svg class="mod-icon" viewBox="0 0 52 40" fill="none">
+        <rect x="0" y="14" width="13" height="12" rx="2" style="fill:var(--accent);opacity:0.85"/>
+        <rect x="16" y="10" width="18" height="20" rx="2" style="fill:var(--violet);opacity:0.7"/>
+        <rect x="37" y="16" width="11" height="10" rx="2" style="fill:var(--green);opacity:0.75"/>
+        <line x1="0" y1="9" x2="52" y2="9" style="stroke:var(--border-hi);stroke-width:1"/>
+        <line x1="6" y1="4" x2="6" y2="9" style="stroke:var(--border-hi);stroke-width:1"/>
+        <line x1="25" y1="4" x2="25" y2="9" style="stroke:var(--border-hi);stroke-width:1"/>
+        <line x1="43" y1="4" x2="43" y2="9" style="stroke:var(--border-hi);stroke-width:1"/>
+      </svg>
+      <div class="mod-path"><span class="dir">unbox/</span>tokenizer/</div>
+      <div class="mod-num">01</div>
+      <div class="mod-name" data-i18n="mod-1-name">Tokenizer</div>
+      <div class="mod-desc" data-i18n="mod-1-desc">BPE from scratch. Byte-level encoding, merge rules, vocabulary construction. No HuggingFace wrappers — just bytes becoming tokens.</div>
+      <span class="mod-tag">32K vocab · BPE</span>
+    </div>
+    <div class="mod-card reveal">
+      <!-- icon: data stream lines -->
+      <svg class="mod-icon" viewBox="0 0 52 40" fill="none">
+        <rect x="0" y="5"  width="52" height="5" rx="2" style="fill:var(--accent);opacity:0.7"/>
+        <rect x="0" y="14" width="36" height="5" rx="2" style="fill:var(--accent);opacity:0.5"/>
+        <rect x="0" y="23" width="44" height="5" rx="2" style="fill:var(--accent);opacity:0.35"/>
+        <rect x="0" y="32" width="28" height="5" rx="2" style="fill:var(--accent);opacity:0.2"/>
+        <circle cx="48" cy="7"  r="2" style="fill:var(--accent)"/>
+        <circle cx="38" cy="16" r="2" style="fill:var(--accent);opacity:0.7"/>
+      </svg>
+      <div class="mod-path"><span class="dir">unbox/</span>data/</div>
+      <div class="mod-num">02</div>
+      <div class="mod-name" data-i18n="mod-2-name">Data Pipeline</div>
+      <div class="mod-desc" data-i18n="mod-2-desc">JSONL ingestion, sequence packing, batching. The exact pipeline that feeds real pretraining runs — every step is a readable function.</div>
+      <span class="mod-tag">FineWeb-Edu · packing</span>
+    </div>
+    <div class="mod-card reveal">
+      <!-- icon: stacked transformer layers with gradient fill -->
+      <svg class="mod-icon" viewBox="0 0 52 40" fill="none">
+        <rect x="2" y="2"  width="48" height="7" rx="1" style="stroke:var(--accent);stroke-opacity:0.3;stroke-width:1"/>
+        <rect x="2" y="12" width="48" height="7" rx="1" style="stroke:var(--accent);stroke-opacity:0.5;stroke-width:1"/>
+        <rect x="2" y="22" width="48" height="7" rx="1" style="stroke:var(--accent);stroke-opacity:0.8;stroke-width:1"/>
+        <rect x="2" y="22" width="30" height="7" rx="1" style="fill:var(--accent);opacity:0.2"/>
+        <rect x="2" y="32" width="48" height="5" rx="1" style="stroke:var(--accent);stroke-opacity:0.35;stroke-width:1;stroke-dasharray:3 2"/>
+      </svg>
+      <div class="mod-path"><span class="dir">unbox/</span>train/</div>
+      <div class="mod-num">03</div>
+      <div class="mod-name" data-i18n="mod-3-name">Pretraining</div>
+      <div class="mod-desc" data-i18n="mod-3-desc">A real 760M parameter model. GQA, RoPE, SwiGLU, RMSNorm, Flash Attention. 3D parallelism via Megatron-Core. Sanity checks at every milestone.</div>
+      <span class="mod-tag">760M · GQA · Flash Attn</span>
+    </div>
+    <div class="mod-card reveal">
+      <!-- icon: conversation bubbles -->
+      <svg class="mod-icon" viewBox="0 0 52 40" fill="none">
+        <rect x="0" y="0" width="30" height="14" rx="3" style="fill:var(--border-hi);opacity:0.8"/>
+        <polygon points="4,14 0,20 12,14" style="fill:var(--border-hi);opacity:0.8"/>
+        <rect x="14" y="22" width="38" height="14" rx="3" style="fill:var(--accent);fill-opacity:0.18;stroke:var(--accent);stroke-opacity:0.45;stroke-width:1"/>
+        <polygon points="48,22 52,16 40,22" style="fill:var(--accent);fill-opacity:0.18"/>
+        <line x1="18" y1="27" x2="34" y2="27" style="stroke:var(--accent);stroke-opacity:0.4;stroke-width:1.5;stroke-linecap:round"/>
+        <line x1="18" y1="31" x2="28" y2="31" style="stroke:var(--accent);stroke-opacity:0.25;stroke-width:1.5;stroke-linecap:round"/>
+      </svg>
+      <div class="mod-path"><span class="dir">unbox/</span>sft/</div>
+      <div class="mod-num">04</div>
+      <div class="mod-name" data-i18n="mod-4-name">Supervised Fine-tuning</div>
+      <div class="mod-desc" data-i18n="mod-4-desc">Chat-template SFT via TRL. One "messages" column, correct token masking, per-device configs. The bridge from base model to assistant.</div>
+      <span class="mod-tag">TRL · SFTTrainer</span>
+    </div>
+    <div class="mod-card reveal">
+      <!-- icon: circular reward loop -->
+      <svg class="mod-icon" viewBox="0 0 52 40" fill="none">
+        <path d="M26 6 A14 14 0 1 1 12 20" style="stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;opacity:0.7"/>
+        <polygon points="12,12 12,22 20,17" style="fill:var(--accent);opacity:0.8"/>
+        <text x="18" y="25" style="font-family:monospace;font-size:9px;fill:var(--green);opacity:0.9">+R</text>
+      </svg>
+      <div class="mod-path"><span class="dir">unbox/</span>rl/</div>
+      <div class="mod-num">05</div>
+      <div class="mod-name" data-i18n="mod-5-name">RL Post-training</div>
+      <div class="mod-desc" data-i18n="mod-5-desc">DPO and GRPO offline. PPO online via OpenRLHF. Verifiable reward RL. The full post-training stack, dissected and documented.</div>
+      <span class="mod-tag">DPO · GRPO · PPO</span>
+    </div>
+    <div class="mod-card reveal">
+      <!-- icon: large circle compressed to small -->
+      <svg class="mod-icon" viewBox="0 0 52 40" fill="none">
+        <circle cx="14" cy="20" r="13" style="stroke:var(--accent);stroke-opacity:0.55;stroke-width:1.5"/>
+        <circle cx="14" cy="20" r="7"  style="fill:var(--accent);fill-opacity:0.1"/>
+        <line x1="28" y1="20" x2="36" y2="20" style="stroke:var(--text-dimmer);stroke-width:1"/>
+        <polyline points="33,16 38,20 33,24" style="stroke:var(--text-dimmer);fill:none;stroke-width:1"/>
+        <circle cx="44" cy="20" r="7"  style="stroke:var(--green);stroke-opacity:0.7;stroke-width:1.5"/>
+        <circle cx="44" cy="20" r="3"  style="fill:var(--green);fill-opacity:0.25"/>
+      </svg>
+      <div class="mod-path"><span class="dir">unbox/</span>distill/</div>
+      <div class="mod-num">06</div>
+      <div class="mod-name" data-i18n="mod-6-name">Distillation</div>
+      <div class="mod-desc" data-i18n="mod-6-desc">Logit matching, hidden-state distillation, reasoning transfer. Compress a large teacher into a small, deployable model you actually own.</div>
+      <span class="mod-tag">GKD · logit matching</span>
+    </div>
+    <div class="mod-card reveal">
+      <!-- icon: server node emitting response streams -->
+      <svg class="mod-icon" viewBox="0 0 52 40" fill="none">
+        <rect x="0" y="10" width="16" height="20" rx="2" style="stroke:var(--accent);stroke-opacity:0.55;stroke-width:1"/>
+        <line x1="3"  y1="18" x2="13" y2="18" style="stroke:var(--accent);stroke-opacity:0.4;stroke-width:1"/>
+        <line x1="3"  y1="22" x2="10" y2="22" style="stroke:var(--accent);stroke-opacity:0.25;stroke-width:1"/>
+        <circle cx="11" cy="27" r="1.5" style="fill:var(--green);opacity:0.8"/>
+        <line x1="18" y1="14" x2="26" y2="8"  style="stroke:var(--accent);stroke-opacity:0.35;stroke-dasharray:2 2"/>
+        <line x1="18" y1="20" x2="28" y2="20" style="stroke:var(--accent);stroke-opacity:0.55;stroke-dasharray:2 2"/>
+        <line x1="18" y1="26" x2="26" y2="32" style="stroke:var(--accent);stroke-opacity:0.35;stroke-dasharray:2 2"/>
+        <rect x="28" y="4"  width="24" height="10" rx="2" style="fill:var(--accent);fill-opacity:0.1;stroke:var(--accent);stroke-opacity:0.4;stroke-width:1"/>
+        <rect x="28" y="26" width="24" height="10" rx="2" style="fill:var(--accent);fill-opacity:0.1;stroke:var(--accent);stroke-opacity:0.4;stroke-width:1"/>
+        <rect x="28" y="15" width="24" height="10" rx="2" style="fill:var(--green);fill-opacity:0.1;stroke:var(--green);stroke-opacity:0.5;stroke-width:1"/>
+      </svg>
+      <div class="mod-path"><span class="dir">unbox/</span>infer/</div>
+      <div class="mod-num">07</div>
+      <div class="mod-name" data-i18n="mod-7-name">Inference Engine</div>
+      <div class="mod-desc" data-i18n="mod-7-desc">Paged KV cache, continuous batching, disaggregated prefill-decode, Triton kernels, tensor parallelism via NCCL. A full engine — readable.</div>
+      <span class="mod-tag">Triton · ZMQ · NCCL</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── WHY ─── -->
+<div class="section why-section">
+  <div class="eyebrow reveal" data-i18n="why-eyebrow">why unbox.ai</div>
+  <h2 class="section-h reveal" data-i18n="why-h">Built for engineers<br>who read source.</h2>
+  <p class="section-p reveal" data-i18n="why-p">
+    Not a tutorial. Not an API wrapper. A complete, working implementation
+    you can read, run, fork, and break on purpose.
+  </p>
+
+  <div class="why-grid">
+    <div class="why-card reveal">
+      <div class="why-icon">▤</div>
+      <div class="why-title" data-i18n="why-1-title">Single-file components</div>
+      <div class="why-desc" data-i18n="why-1-desc">RMSNorm, RoPE, attention, FFN — each lives in one file. Open it, read it, understand it. No hunting through 40-file class hierarchies to find where the math happens.</div>
+    </div>
+    <div class="why-card reveal">
+      <div class="why-icon">◈</div>
+      <div class="why-title" data-i18n="why-2-title">Real model. Real results.</div>
+      <div class="why-desc" data-i18n="why-2-desc">A 760M parameter model trained on FineWeb-Edu with documented sanity checks at step 10k and 15k. Not toy examples — production-grade configs you can reproduce.</div>
+    </div>
+    <div class="why-card reveal">
+      <div class="why-icon">⌥</div>
+      <div class="why-title" data-i18n="why-3-title">Lego-piece architecture</div>
+      <div class="why-desc" data-i18n="why-3-desc">Every component is individually importable. Swap one atom out of a molecule, run your experiment. The boundary between stable platform and research lab is principled and explicit.</div>
+    </div>
+    <div class="why-card reveal">
+      <div class="why-icon">⬡</div>
+      <div class="why-title" data-i18n="why-4-title">Design docs for every layer</div>
+      <div class="why-desc" data-i18n="why-4-desc">Architecture decisions are written down — why Megatron-Core, why Triton, why disaggregated inference. The reasoning is part of the curriculum, not locked in someone's head.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TERMINAL ─── -->
+<div class="terminal-section">
+  <div class="terminal-inner">
+    <div class="terminal-left">
+      <div class="eyebrow reveal" data-i18n="term-eyebrow">from day one</div>
+      <h2 class="section-h reveal" data-i18n="term-h">Run a real<br>training loop<br>in minutes.</h2>
+      <p class="section-p reveal" data-i18n="term-p">
+        Download the data, train the tokenizer, launch pretraining.
+        Every command maps to code you can read. No magic, no hidden config.
+      </p>
+    </div>
+    <div class="terminal-window reveal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span class="title">unbox.ai — terminal</span>
+      </div>
+      <div class="terminal-body">
+        <div class="t-line"><span class="t-ps">$</span><span class="t-cmd">python -m unbox_platform.data.prepare \</span></div>
+        <div class="t-line"><span class="t-ps" style="opacity:0"> </span><span class="t-cmd">&nbsp;&nbsp;--output data/fineweb.jsonl</span></div>
+        <div class="t-out t-dim">Streaming 10B tokens from FineWeb-Edu...</div>
+        <div class="t-out t-green">✓ 10,240,000,000 tokens saved</div>
+        <br>
+        <div class="t-line"><span class="t-ps">$</span><span class="t-cmd">python -m unbox_platform.tokenizer.train \</span></div>
+        <div class="t-line"><span class="t-ps" style="opacity:0"> </span><span class="t-cmd">&nbsp;&nbsp;--data data/fineweb.jsonl --output checkpoints/tok</span></div>
+        <div class="t-out t-green">✓ 32K vocab BPE tokenizer trained</div>
+        <br>
+        <div class="t-line"><span class="t-ps">$</span><span class="t-cmd">torchrun --nproc_per_node=8 \</span></div>
+        <div class="t-line"><span class="t-ps" style="opacity:0"> </span><span class="t-cmd">&nbsp;&nbsp;-m unbox_platform.train.pretrain \</span></div>
+        <div class="t-line"><span class="t-ps" style="opacity:0"> </span><span class="t-cmd">&nbsp;&nbsp;--config configs/pretrain/760m.yaml</span></div>
+        <div class="t-out t-dim">step=1000 loss=6.412 lr=3e-4 tok/s=142k</div>
+        <div class="t-out t-dim">step=5000 loss=4.891 lr=3e-4 tok/s=141k</div>
+        <div class="t-out t-violet">step=10000 loss=3.742 ✓ sanity check passed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── WAITLIST CTA ─── -->
+<div class="cta-section" id="waitlist">
+  <div class="cta-bg"></div>
+  <div class="eyebrow" data-i18n="cta-eyebrow">early access</div>
+  <h2 class="section-h" data-i18n="cta-h">Get notified<br>when we launch.</h2>
+  <p class="section-p" data-i18n="cta-p">
+    We&rsquo;re building in public. Join the waitlist and be first to know when the
+    first module drops — with full source, configs, and a trained checkpoint.
+  </p>
+
+  <div class="cta-form-wrap" id="cta-form">
+    <input class="email-input" id="cta-email" type="email" placeholder="your@email.com" autocomplete="email" data-i18n-placeholder="email-placeholder">
+    <button class="submit-btn" id="cta-btn" onclick="handleSignup('cta')" data-i18n="cta-btn">Join waitlist</button>
+  </div>
+  <div class="success-state" id="cta-success">
+    <div class="success-box">
+      <span>✓</span> <span data-i18n="success-msg">You&rsquo;re on the list &mdash; we&rsquo;ll be in touch.</span>
+    </div>
+  </div>
+  <p class="hero-note" data-i18n="hero-note">No spam &middot; notify-only &middot; unsubscribe any time</p>
+  <p class="wl-counter" style="margin-top:14px; justify-content:center;"><span class="wl-avatars" aria-hidden="true"><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3a6fd8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#18a87e"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#7c42c8"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#b84f1a"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg><svg class="wl-avatar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#3d5080"/><circle cx="12" cy="9.5" r="3.5" fill="rgba(255,255,255,0.88)"/><path d="M5 21c0-4.5 14-4.5 14 0" fill="rgba(255,255,255,0.88)"/></svg></span><span><span data-i18n="wl-prefix">Join</span> <strong><span class="wl-count">312</span>+</strong> <span data-i18n="wl-suffix-2">engineers already on the list</span></span></p>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-logo"><strong>unbox.ai</strong> &mdash; <span data-i18n="footer-tagline">LLMs have no secrets here</span></div>
+  <div class="footer-copy" data-i18n="footer-copy">&copy; 2026 &middot; Building in public</div>
+</footer>
+
+<!-- ─── FIREBASE ─── -->
+<script type="module">
+  import { initializeApp }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAnalytics }             from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
+  import { getFirestore, collection,
+           addDoc, serverTimestamp,
+           getCountFromServer }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBT4YE-hAThkisCtf4jSerQiJFT9cS71ok",
+    authDomain:        "unbox-ai-project.firebaseapp.com",
+    projectId:         "unbox-ai-project",
+    storageBucket:     "unbox-ai-project.firebasestorage.app",
+    messagingSenderId: "264603738016",
+    appId:             "1:264603738016:web:f598828441d82087498ec5",
+    measurementId:     "G-D55HTZCK9J"
+  };
+
+  const app       = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db        = getFirestore(app);
+
+  window._db       = db;
+  window._col      = collection(db, 'waitlist');
+  window._ts       = serverTimestamp;
+  window._add      = addDoc;
+  window._getCount = getCountFromServer;
+</script>
+
+<!-- ─── PAGE JS ─── -->
+<script>
+  // ── Theme: init from localStorage or system preference
+  (function() {
+    const saved = localStorage.getItem('unbox-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+    document.documentElement.dataset.theme = theme;
+    updateThemeIcon(theme);
+  })();
+
+  function updateThemeIcon(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'dark' ? '☀' : '☾';
+  }
+
+  window.toggleTheme = function() {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('unbox-theme', next);
+    updateThemeIcon(next);
+  };
+
+  // ── i18n Translation System ──────────────────────────────────────────
+  const TRANSLATIONS = {
+    en: {
+      'nav-btn':       'Join waitlist',
+      'hero-badge':    '7-module LLM course \u00b7 building in public',
+      'hero-title-1':  'Build a real LLM.',
+      'hero-title-2':  'Understand <span class="accent-word">every line.</span>',
+      'hero-sub':      'A hands-on course that takes you from a blank tokenizer to a trained <code>760M parameter model</code> \u2014 with readable source code and real results at every step. No black boxes.',
+      'hero-btn':      'Get early access',
+      'success-msg':   'You\u2019re on the list \u2014 we\u2019ll be in touch.',
+      'hero-note':     'No spam \u00b7 notify-only \u00b7 unsubscribe any time',
+      'wl-prefix':     'Join',
+      'wl-suffix':     'engineers on the waitlist',
+      'wl-suffix-2':   'engineers already on the list',
+      'email-placeholder': 'your@email.com',
+      'stats-1-lbl':   'params trained from scratch',
+      'stats-2-lbl':   'end-to-end modules',
+      'stats-3-lbl':   'training tokens (FineWeb-Edu)',
+      'stats-4-lbl':   'black boxes',
+      'mod-eyebrow':   'curriculum',
+      'mod-h':         'Seven modules.<br>The full stack.',
+      'mod-p':         'Each module is a self-contained, readable implementation \u2014 one file you can open, read top-to-bottom, and modify. Import what you need. Swap what you want.',
+      'mod-1-name':    'Tokenizer',
+      'mod-1-desc':    'BPE from scratch. Byte-level encoding, merge rules, vocabulary construction. No HuggingFace wrappers \u2014 just bytes becoming tokens.',
+      'mod-2-name':    'Data Pipeline',
+      'mod-2-desc':    'JSONL ingestion, sequence packing, batching. The exact pipeline that feeds real pretraining runs \u2014 every step is a readable function.',
+      'mod-3-name':    'Pretraining',
+      'mod-3-desc':    'A real 760M parameter model. GQA, RoPE, SwiGLU, RMSNorm, Flash Attention. 3D parallelism via Megatron-Core. Sanity checks at every milestone.',
+      'mod-4-name':    'Supervised Fine-tuning',
+      'mod-4-desc':    'Chat-template SFT via TRL. One \u201cmessages\u201d column, correct token masking, per-device configs. The bridge from base model to assistant.',
+      'mod-5-name':    'RL Post-training',
+      'mod-5-desc':    'DPO and GRPO offline. PPO online via OpenRLHF. Verifiable reward RL. The full post-training stack, dissected and documented.',
+      'mod-6-name':    'Distillation',
+      'mod-6-desc':    'Logit matching, hidden-state distillation, reasoning transfer. Compress a large teacher into a small, deployable model you actually own.',
+      'mod-7-name':    'Inference Engine',
+      'mod-7-desc':    'Paged KV cache, continuous batching, disaggregated prefill-decode, Triton kernels, tensor parallelism via NCCL. A full engine \u2014 readable.',
+      'why-eyebrow':   'why unbox.ai',
+      'why-h':         'Built for engineers<br>who read source.',
+      'why-p':         'Not a tutorial. Not an API wrapper. A complete, working implementation you can read, run, fork, and break on purpose.',
+      'why-1-title':   'Single-file components',
+      'why-1-desc':    'RMSNorm, RoPE, attention, FFN \u2014 each lives in one file. Open it, read it, understand it. No hunting through 40-file class hierarchies to find where the math happens.',
+      'why-2-title':   'Real model. Real results.',
+      'why-2-desc':    'A 760M parameter model trained on FineWeb-Edu with documented sanity checks at step 10k and 15k. Not toy examples \u2014 production-grade configs you can reproduce.',
+      'why-3-title':   'Lego-piece architecture',
+      'why-3-desc':    'Every component is individually importable. Swap one atom out of a molecule, run your experiment. The boundary between stable platform and research lab is principled and explicit.',
+      'why-4-title':   'Design docs for every layer',
+      'why-4-desc':    'Architecture decisions are written down \u2014 why Megatron-Core, why Triton, why disaggregated inference. The reasoning is part of the curriculum, not locked in someone\u2019s head.',
+      'term-eyebrow':  'from day one',
+      'term-h':        'Run a real<br>training loop<br>in minutes.',
+      'term-p':        'Download the data, train the tokenizer, launch pretraining. Every command maps to code you can read. No magic, no hidden config.',
+      'cta-eyebrow':   'early access',
+      'cta-h':         'Get notified<br>when we launch.',
+      'cta-p':         'We\u2019re building in public. Join the waitlist and be first to know when the first module drops \u2014 with full source, configs, and a trained checkpoint.',
+      'cta-btn':       'Join waitlist',
+      'footer-tagline':'LLMs have no secrets here',
+      'footer-copy':   '\u00a9 2026 \u00b7 Building in public',
+    },
+    zh: {
+      'nav-btn':       '\u52a0\u5165\u5019\u8865\u540d\u5355',
+      'hero-badge':    '7 \u6a21\u5757\u5927\u8bed\u8a00\u6a21\u578b\u8bfe\u7a0b \u00b7 \u5f00\u6e90\u5171\u5efa\u4e2d',
+      'hero-title-1':  '\u4ece\u96f6\u6784\u5efa\u771f\u5b9e\u5927\u6a21\u578b\u3002',
+      'hero-title-2':  '<span class="accent-word">\u7406\u6e05\u6bcf\u4e00\u884c\u4ee3\u7801</span>',
+      'hero-sub':      '\u4e00\u95e8\u5b9e\u6218\u5bfc\u5411\u7684\u7cfb\u7edf\u6027\u8bfe\u7a0b\u3002\u5e26\u4f60\u4ece\u96f6\u5b9e\u73b0\u5206\u8bcd\u5668\uff0c\u4e00\u6b65\u6b65\u8bad\u7ec3\u51fa <code>760M \u53c2\u6570\u5927\u8bed\u8a00\u6a21\u578b</code> \u2014\u2014 \u6bcf\u4e00\u6b65\u90fd\u914d\u6709\u6781\u5177\u53ef\u8bfb\u6027\u7684\u6e90\u7801\u4e0e\u771f\u5b9e\u8bad\u7ec3\u6210\u679c\u3002\u62d2\u7edd\u9ed1\u76d2\u3002',
+      'hero-btn':      '\u65e9\u671f\u8bbf\u95ee',
+      'success-msg':   '\u767b\u8bb0\u6210\u529f\uff01\u53d1\u5e03\u65f6\u6211\u4eec\u5c06\u4e0e\u60a8\u8054\u7cfb\u3002',
+      'hero-note':     '\u7edd\u65e0\u5783\u573e\u90ae\u4ef6 \u00b7 \u4ec5\u4f5c\u9996\u53d1\u901a\u77e5 \u00b7 \u53ef\u968f\u65f6\u53d6\u6d88\u8ba2\u9605',
+      'wl-prefix':     '\u5df2\u6709',
+      'wl-suffix':     '\u4f4d\u5de5\u7a0b\u5e08\u52a0\u5165\u5019\u8865\u540d\u5355',
+      'wl-suffix-2':   '\u4f4d\u5de5\u7a0b\u5e08\u5df2\u5728\u540d\u5355\u4e2d',
+      'email-placeholder': '\u60a8\u7684\u90ae\u7b97\u5730\u5740',
+      'stats-1-lbl':   '\u4ece\u96f6\u5f00\u59cb\u8bad\u7ec3\u7684\u53c2\u6570\u91cf',
+      'stats-2-lbl':   '\u7aef\u5230\u7aef\u6838\u5fc3\u6a21\u5757',
+      'stats-3-lbl':   '\u8bad\u7ec3 Token \u6570\u91cf (FineWeb-Edu)',
+      'stats-4-lbl':   '\u9ed1\u76d2/\u4e0d\u900f\u660e\u8bbe\u8ba1',
+      'mod-eyebrow':   '\u8bfe\u7a0b\u5927\u7eb2',
+      'mod-h':         '\u4e03\u5927\u6a21\u5757\uff0c\u5168\u6808\u901a\u5173\u3002',
+      'mod-p':         '\u6bcf\u4e2a\u6a21\u5757\u90fd\u662f\u4e00\u4e2a\u81ea\u5305\u542b\u3001\u9ad8\u53ef\u8bfb\u7684\u72ec\u7acb\u5b9e\u73b0 \u2014\u2014 \u4f60\u53ef\u4ee5\u6253\u5f00\u5355\u4e2a\u6587\u4ef6\uff0c\u4ece\u5934\u8bfb\u5230\u5c3e\uff0c\u5e76\u6839\u636e\u9700\u8981\u968f\u65f6\u4fee\u6539\u3002\u5373\u63d2\u5373\u7528\uff0c\u81ea\u7531\u66ff\u6362\u3002',
+      'mod-1-name':    '\u5206\u8bcd\u5668',
+      'mod-1-desc':    '\u4ece\u96f6\u5b9e\u73b0 BPE\u3002\u5b57\u8282\u7ea7\u7f16\u7801\u3001\u5408\u5e76\u89c4\u5219\u3001\u8bcd\u8868\u6784\u5efa\u3002\u4e0d\u4f9d\u8d56 HuggingFace \u5c01\u88c5 \u2014\u2014 \u76f4\u63a5\u5c06\u5b57\u8282\u6620\u5c04\u4e3a Token\u3002',
+      'mod-2-name':    '\u6570\u636e\u6d41\u6c34\u7ebf',
+      'mod-2-desc':    'JSONL \u6d41\u5f0f\u8bfb\u5165\u3001\u5e8f\u5217\u6253\u5305\u3001\u6279\u6b21\u5316\u5904\u7406\u3002\u8fd9\u6b63\u662f\u9a71\u52a8\u771f\u5b9e\u9884\u8bad\u7ec3\u4efb\u52a1\u7684\u5b8c\u6574\u6d41\u6c34\u7ebf \u2014\u2014 \u6bcf\u4e00\u4e2a\u6b65\u9aa4\u90fd\u662f\u53ef\u8bfb\u51fd\u6570\u3002',
+      'mod-3-name':    '\u9884\u8bad\u7ec3',
+      'mod-3-desc':    '\u771f\u5b9e\u7684 760M \u53c2\u6570\u6a21\u578b\u3002GQA\u3001RoPE\u3001SwiGLU\u3001RMSNorm\u3001Flash Attention\u3002\u901a\u8fc7 Megatron-Core \u5b9e\u73b0 3D \u5e76\u884c\u3002\u6bcf\u4e2a\u91cc\u7a0b\u788c\u90fd\u914d\u6709\u5065\u5168\u6027\u68c0\u67e5\u3002',
+      'mod-4-name':    '\u76d1\u7763\u5fae\u8c03 (SFT)',
+      'mod-4-desc':    '\u57fa\u4e8e TRL \u7684\u5bf9\u8bdd\u6a21\u677f SFT\u3002\u5355\u4e00 \u201cmessages\u201d \u5217\u3001\u6b63\u786e\u7684 Token \u63a9\u7801\u3001\u8bbe\u5907\u7ea7\u914d\u7f6e\u3002\u4ece\u57fa\u7840\u6a21\u578b\u5230\u5bf9\u8bdd\u52a9\u624b\u7684\u6865\u6881\u3002',
+      'mod-5-name':    '\u5f3a\u5316\u5b66\u4e60\u5bf9\u9f50',
+      'mod-5-desc':    '\u79bb\u7ebf DPO \u4e0e GRPO\u3002\u901a\u8fc7 OpenRLHF \u5b9e\u73b0\u5728\u7ebf PPO\u3002\u53ef\u9a8c\u8bc1\u5956\u52b1 RL\u3002\u5b8c\u6574\u7684\u540e\u8bad\u7ec3\u6808\uff0c\u5168\u9762\u526f\u89e3\u4e0e\u8bb0\u5f55\u3002',
+      'mod-6-name':    '\u77e5\u8bc6\u8717\u998f',
+      'mod-6-desc':    'Logit \u5339\u914d\u3001\u9690\u5c42\u72b6\u6001\u8717\u998f\u3001\u63a8\u7406\u8fc1\u79fb\u3002\u5c06\u5927\u578b\u6559\u5e08\u538b\u7f29\u4e3a\u5c0f\u578b\u3001\u53ef\u90e8\u7f72\u7684\u5b66\u751f\u6a21\u578b\u3002',
+      'mod-7-name':    '\u63a8\u7406\u5f15\u64ce',
+      'mod-7-desc':    '\u5206\u9875 KV \u7f13\u5b58\u3001\u8fde\u7eed\u6279\u5904\u7406\u3001Prefill-Decode \u5206\u79bb\u3001Triton \u7b97\u5b50\u3001\u57fa\u4e8e NCCL \u7684\u5f20\u91cf\u5e76\u884c\u3002\u4e00\u4e2a\u5b8c\u6574\u7684\u5de5\u4e1a\u7ea7\u5f15\u64ce \u2014\u2014 \u4ee5\u53ef\u8bfb\u6027\u4e3a\u5148\u3002',
+      'why-eyebrow':   '\u4e3a\u4ec0\u4e48\u9009\u62e9 unbox.ai',
+      'why-h':         '\u4e13\u4e3a\u70ed\u8377\u4e8e\u9605\u8bfb\u6e90\u7801\u7684\u5de5\u7a0b\u5e08\u8bbe\u8ba1\u3002',
+      'why-p':         '\u8fd9\u4e0d\u662f\u67af\u71e5\u7684\u6559\u7a0b\uff0c\u4e5f\u4e0d\u662f\u73b0\u6210\u7684 API \u5957\u58f3\u3002\u8fd9\u662f\u4e00\u4e2a\u5b8c\u6574\u3001\u53ef\u8fd0\u884c\u7684\u771f\u5b9e\u7cfb\u7edf\u5b9e\u73b0\uff0c\u4f60\u53ef\u4ee5\u81ea\u7531\u9605\u8bfb\u3001\u8c03\u8bd5\u3001\u590d\u523b\uff0c\u751a\u81f3\u6545\u610f\u6539\u52a8\u7ec4\u4ef6\u6765\u52a0\u6df1\u7406\u89e3\u3002',
+      'why-1-title':   '\u5355\u6587\u4ef6\u6838\u5fc3\u7ec4\u4ef6',
+      'why-1-desc':    'RMSNorm\u3001RoPE\u3001Attention\u3001FFN \u2014\u2014 \u6bcf\u4e00\u4e2a\u90fd\u5854\u5728\u4e00\u4e2a\u72ec\u7acb\u7684\u6587\u4ef6\u4e2d\u3002\u6253\u5f00\u5373\u8bfb\uff0c\u4e00\u76ee\u4e86\u7136\u3002\u65e0\u9700\u5728\u6d89\u53ca\u51e0\u5341\u4e2a\u6587\u4ef6\u7684\u6df1\u5c42\u7c7b\u7ee7\u627f\u5173\u7cfb\u4e2d\u82e6\u82e6\u641c\u5bfb\u6570\u5b66\u516c\u5f0f\u7684\u771f\u6b63\u843d\u811a\u70b9\u3002',
+      'why-2-title':   '\u771f\u5b9e\u6a21\u578b\uff0c\u771f\u5b9e\u6210\u6548',
+      'why-2-desc':    '\u5728 FineWeb-Edu \u6570\u636e\u96c6\u4e0a\u8bad\u7ec3\u7684 760M \u53c2\u6570\u6a21\u578b\uff0c\u5b8c\u6574\u8bb0\u5f55\u4e86 10k \u548c 15k \u6b65\u65f6\u7684\u5065\u5168\u6027\u68c0\u67e5\u3002\u7edd\u975e\u73a9\u5177\u793a\u4f8b \u2014\u2014 \u800c\u662f\u80fd\u8ba9\u4f60\u5b8c\u7f8e\u590d\u73b0\u7684\u751f\u4ea7\u7ea7\u914d\u7f6e\u3002',
+      'why-3-title':   '\u79ef\u6728\u5f0f\u89e3\u8026\u67b6\u6784',
+      'why-3-desc':    '\u6bcf\u4e00\u4e2a\u7ec4\u4ef6\u90fd\u53ef\u4ee5\u5355\u72ec\u5bfc\u5165\u3002\u53ea\u9700\u5c06\u201c\u5206\u5b50\u201d\u4e2d\u7684\u67d0\u4e2a\u201c\u539f\u5b50\u201d\u66ff\u6362\u6389\uff0c\u5c31\u80fd\u7acb\u523b\u8fd0\u884c\u4f60\u7684\u5b9a\u5236\u5b9e\u9a8c\u3002\u7a33\u5b9a\u5e73\u53f0\u5c42\u4e0e\u524d\u6cbf\u7814\u7a76\u5ba4\u4e4b\u95f4\u7684\u754c\u9650\u6e05\u6670\u3001\u89c4\u8303\u4e14\u539f\u5219\u660e\u786e\u3002',
+      'why-4-title':   '\u5168\u5c42\u7ea7\u6280\u672f\u8bbe\u8ba1\u6587\u6863',
+      'why-4-desc':    '\u6240\u6709\u7684\u67b6\u6784\u51b3\u7b56\u90fd\u843d\u4e8e\u7eb8\u9762 \u2014\u2014 \u4e3a\u4ec0\u4e48\u9009 Megatron-Core\u3001\u4e3a\u4ec0\u4e48\u5199 Triton \u7b97\u5b50\u3001\u4e3a\u4ec0\u4e48\u505a Prefill-Decode \u5206\u79bb\u3002\u5e95\u5c42\u7684\u8bbe\u8ba1\u8003\u91cf\u672c\u8eab\u5c31\u662f\u8bfe\u7a0b\u7684\u6838\u5fc3\uff0c\u800c\u975e\u79d8\u800c\u4e0d\u5ba3\u3002',
+      'term-eyebrow':  '\u65b0\u624b\u53cb\u597d',
+      'term-h':        '\u6570\u5206\u949f\u5185\u542f\u52a8\u771f\u5b9e\u8bad\u7ec3\u5faa\u73af\u3002',
+      'term-p':        '\u62c9\u53d6\u8bad\u7ec3\u6570\u636e\u3001\u8bad\u7ec3\u5206\u8bcd\u5668\u3001\u5f00\u542f\u6a21\u578b\u9884\u8bad\u7ec3\u3002\u6bcf\u4e00\u6761\u7ec8\u7aef\u6307\u4ee4\u90fd\u76f4\u63a5\u6620\u5c04\u81f3\u4f60\u53ef\u4ee5\u9605\u8bfb\u7684\u6e90\u7801\u3002\u62d2\u7edd\u9ed1\u76d2\u9b54\u6cd5\u4e0e\u9690\u853d\u7684\u5e95\u5c42\u9b54\u6539\u3002',
+      'cta-eyebrow':   '\u65e9\u671f\u8bbf\u95ee',
+      'cta-h':         '\u9996\u53d1\u5373\u523b\u901a\u77e5',
+      'cta-p':         '\u6211\u4eec\u6b63\u5728\u5168\u516c\u5f00\u6784\u5efa\u9879\u76ee\u3002\u52a0\u5165\u5019\u8865\u540d\u5355\uff0c\u5728\u7b2c\u4e00\u4e2a\u6838\u5fc3\u6a21\u5757\u53d1\u5e03\u65f6\u65a9\u83b7\u9996\u53d1\u63a8\u9001 \u2014\u2014 \u5305\u542b\u5b8c\u6574\u7684\u6e90\u7801\u3001\u914d\u7f6e\u65b9\u6848\u4ee5\u53ca\u5df2\u8bad\u7ec3\u5b8c\u6bd5\u7684\u6743\u91cd\u3002',
+      'cta-btn':       '\u52a0\u5165\u5019\u8865\u540d\u5355',
+      'footer-tagline':'\u8ba9\u5927\u8bed\u8a00\u6a21\u578b\u518d\u65e0\u79d8\u5bc6',
+      'footer-copy':   '\u00a9 2026 \u00b7 \u5f00\u6e90\u5171\u5efa\u4e2d',
+    }
+  };
+
+  // Keys whose value should be set as innerHTML (may contain tags like <br>, <code>)
+  const HTML_KEYS = new Set([
+    'hero-sub', 'hero-title-2', 'mod-h', 'why-h', 'term-h', 'cta-h',
+    'mod-1-desc','mod-2-desc','mod-3-desc','mod-4-desc',
+    'mod-5-desc','mod-6-desc','mod-7-desc',
+    'why-1-desc','why-2-desc','why-3-desc','why-4-desc',
+    'why-h','term-h','cta-h',
+  ]);
+
+  function applyLanguage(lang) {
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+
+    // Swap textContent / innerHTML on [data-i18n] elements
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (!(key in t)) return;
+      if (HTML_KEYS.has(key)) {
+        el.innerHTML = t[key];
+      } else {
+        el.textContent = t[key];
+      }
+    });
+
+    // Swap placeholders on [data-i18n-placeholder] elements
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.dataset.i18nPlaceholder;
+      if (key in t) el.placeholder = t[key];
+    });
+
+    // Update <html lang> attribute for accessibility
+    document.documentElement.lang = lang;
+
+    // Update lang toggle button label
+    const btn = document.getElementById('lang-toggle');
+    if (btn) btn.textContent = lang === 'zh' ? 'EN' : '\u4e2d';
+  }
+
+  window.toggleLanguage = function() {
+    const current = localStorage.getItem('unbox-lang') || 'en';
+    const next = current === 'en' ? 'zh' : 'en';
+    localStorage.setItem('unbox-lang', next);
+    applyLanguage(next);
+  };
+
+  // Bootstrap language on load
+  (function() {
+    const saved = localStorage.getItem('unbox-lang');
+    const lang = saved || 'en';
+    applyLanguage(lang);
+  })();
+  // ────────────────────────────────────────────────────────────────────
+
+  // ── Nav scroll
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', scrollY > 30);
+  }, { passive: true });
+
+  // ── Scroll to waitlist
+  window.scrollToWaitlist = function() {
+    document.getElementById('waitlist').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ── Waitlist signup
+  window.handleSignup = async function(src) {
+    const emailEl  = document.getElementById(src === 'hero' ? 'hero-email' : 'cta-email');
+    const btnEl    = document.getElementById(src === 'hero' ? 'hero-btn'   : 'cta-btn');
+    const formEl   = document.getElementById(src === 'hero' ? 'hero-form'  : 'cta-form');
+    const succEl   = document.getElementById(src === 'hero' ? 'hero-success': 'cta-success');
+    const email    = emailEl.value.trim();
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailEl.classList.add('error');
+      emailEl.focus();
+      setTimeout(() => emailEl.classList.remove('error'), 1600);
+      return;
+    }
+
+    btnEl.disabled    = true;
+    btnEl.textContent = '...';
+
+    try {
+      await window._add(window._col, {
+        email,
+        source:    src,
+        timestamp: window._ts()
+      });
+      formEl.style.display = 'none';
+      succEl.classList.add('show');
+      wlAdded++;
+      updateWLCount();
+    } catch (err) {
+      console.error('Firestore write failed:', err);
+      btnEl.disabled    = false;
+      btnEl.textContent = src === 'hero' ? 'Get early access' : 'Join waitlist';
+      emailEl.classList.add('error');
+      setTimeout(() => emailEl.classList.remove('error'), 1600);
+    }
+  };
+
+  // ── Enter key on inputs
+  ['hero-email', 'cta-email'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') window.handleSignup(id.startsWith('hero') ? 'hero' : 'cta');
+    });
+  });
+
+  // ── Reveal on scroll
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('in'), i * 70);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── Waitlist counter
+  const WL_BASE  = 312;
+  let wlReal     = 0;     // fetched from Firestore
+  let wlAdded    = 0;     // signups in this session
+  let wlInView   = false;
+  let wlAnimated = false;
+
+  function updateWLCount() {
+    document.querySelectorAll('.wl-count').forEach(el => {
+      el.textContent = WL_BASE + wlReal + wlAdded;
+    });
+  }
+
+  function runWLAnimation() {
+    if (wlAnimated || !wlInView) return;
+    wlAnimated = true;
+    const end = WL_BASE + wlReal + wlAdded;
+    const t0  = performance.now();
+    (function step(now) {
+      const p     = Math.min((now - t0) / 1400, 1);
+      const eased = 1 - Math.pow(1 - p, 3);           // ease-out cubic
+      const val   = Math.round(end * eased);           // counts up from 0
+      document.querySelectorAll('.wl-count').forEach(el => { el.textContent = val; });
+      if (p < 1) requestAnimationFrame(step);
+    })(performance.now());
+  }
+
+  updateWLCount();
+
+  // Trigger animation when either counter scrolls into view
+  const wlObserver = new IntersectionObserver(entries => {
+    if (entries.some(e => e.isIntersecting) && !wlAnimated) {
+      wlInView = true;
+      runWLAnimation();
+      wlObserver.disconnect();
+    }
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.wl-counter').forEach(el => wlObserver.observe(el));
+
+  // Fetch real count; modules are deferred so window._getCount is ready by DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', async function() {
+    try {
+      const snap = await window._getCount(window._col);
+      wlReal = snap.data().count;
+      updateWLCount();
+      runWLAnimation(); // animate if already in view
+    } catch (_) { /* leave WL_BASE as-is on error */ }
+  });
+
+  // ── Pipeline animation (arch diagram + traveling packet + dynamic visualiser)
+  (function() {
+    const anodes = Array.from(document.querySelectorAll('.arch-node'));
+    const packet = document.getElementById('arch-packet');
+    const N      = anodes.length;
+    let idx      = 0;
+
+    // Stage visualizer DOM references
+    const visStageTag = document.getElementById('vis-stage-tag');
+    const visStageTitle = document.getElementById('vis-stage-title');
+    const visPanels = Array.from(document.querySelectorAll('.vis-stage-panel'));
+
+    const STAGE_METADATA = {
+      en: [
+        { tag: "Stage 01", title: "BPE Tokenizer" },
+        { tag: "Stage 02", title: "Data Pipeline" },
+        { tag: "Stage 03", title: "Pretraining" },
+        { tag: "Stage 04", title: "Supervised Fine-tuning" },
+        { tag: "Stage 05", title: "RL Post-training" },
+        { tag: "Stage 06", title: "Knowledge Distillation" },
+        { tag: "Stage 07", title: "Inference serving" }
+      ],
+      zh: [
+        { tag: "阶段 01", title: "分词器" },
+        { tag: "阶段 02", title: "数据流水线" },
+        { tag: "阶段 03", title: "预训练" },
+        { tag: "阶段 04", title: "监督微调" },
+        { tag: "阶段 05", title: "强化学习对齐" },
+        { tag: "阶段 06", title: "知识蒸馏" },
+        { tag: "阶段 07", title: "推理引擎" }
+      ]
+    };
+
+    let activeInterval = null;
+
+    function nodeCenter(i) {
+      const n = anodes[i];
+      return n ? n.offsetTop + n.offsetHeight / 2 : 0;
+    }
+
+    function movePacket(i, animate) {
+      if (!packet) return;
+      packet.style.transition = animate
+        ? 'top 0.7s cubic-bezier(0.4, 0, 0.2, 1)'
+        : 'none';
+      packet.style.top = nodeCenter(i) + 'px';
+    }
+
+    // --- Dynamic Stage-Specific Micro-Animations ---
+
+    // 1. BPE Tokenizer
+    function animateBPE() {
+      const container = document.getElementById('bpe-words');
+      const info = document.getElementById('bpe-info');
+      const v1 = document.getElementById('bpe-v-1');
+      const v2 = document.getElementById('bpe-v-2');
+      const v3 = document.getElementById('bpe-v-3');
+      const v4 = document.getElementById('bpe-v-4');
+      if (!container || !info) return null;
+      
+      let step = 0;
+      function run() {
+        if (v1) v1.classList.remove('active');
+        if (v2) v2.classList.remove('active');
+        if (v3) v3.classList.remove('active');
+        if (v4) v4.classList.remove('active');
+        
+        if (step === 0) {
+          container.innerHTML = `
+            <span class="bpe-char highlight">u</span>
+            <span class="bpe-char highlight">n</span>
+            <span class="bpe-char">b</span>
+            <span class="bpe-char">o</span>
+            <span class="bpe-char">x</span>
+          `;
+          info.textContent = "Merge: 'u' + 'n' → 'un'";
+          if (v1) v1.classList.add('active');
+          step = 1;
+        } else if (step === 1) {
+          container.innerHTML = `
+            <span class="bpe-char merged">un</span>
+            <span class="bpe-char highlight">b</span>
+            <span class="bpe-char highlight">o</span>
+            <span class="bpe-char">x</span>
+          `;
+          info.textContent = "Merge: 'b' + 'o' → 'bo'";
+          if (v2) v2.classList.add('active');
+          step = 2;
+        } else if (step === 2) {
+          container.innerHTML = `
+            <span class="bpe-char merged">un</span>
+            <span class="bpe-char highlight">bo</span>
+            <span class="bpe-char highlight">x</span>
+          `;
+          info.textContent = "Merge: 'bo' + 'x' → 'box'";
+          if (v3) v3.classList.add('active');
+          step = 3;
+        } else if (step === 3) {
+          container.innerHTML = `
+            <span class="bpe-char highlight">un</span>
+            <span class="bpe-char highlight">box</span>
+          `;
+          info.textContent = "Merge: 'un' + 'box' → 'unbox' [ID: 261]";
+          if (v4) v4.classList.add('active');
+          step = 4;
+        } else if (step === 4) {
+          container.innerHTML = `
+            <span class="bpe-char merged" style="font-weight:700; transform: scale(1.1); box-shadow: 0 0 10px rgba(162, 89, 247, 0.3);">unbox</span>
+          `;
+          info.textContent = "Tokenization complete! [Vocab ID: 261]";
+          step = 0;
+        }
+      }
+      run();
+      return setInterval(run, 500);
+    }
+
+    // 2. Data Pipeline
+    function animatePipeline() {
+      const packed = document.getElementById('pipe-packed');
+      if (!packed) return null;
+      const tokens = Array.from(packed.querySelectorAll('.pipe-token'));
+      let index = 0;
+      
+      function run() {
+        tokens.forEach((t, idx) => {
+          if (idx === index || idx === (index + 1) % tokens.length) {
+            t.style.transform = 'scale(1.06)';
+            t.style.filter = 'brightness(1.2)';
+            t.style.boxShadow = '0 0 8px currentColor';
+          } else {
+            t.style.transform = 'none';
+            t.style.filter = 'none';
+            t.style.boxShadow = 'none';
+          }
+        });
+        index = (index + 1) % tokens.length;
+      }
+      run();
+      return setInterval(run, 250);
+    }
+
+    // 3. Pretraining (Self-Attention Matrix)
+    function animateAttention() {
+      const words = Array.from(document.querySelectorAll('.attn-word'));
+      const cells = Array.from(document.querySelectorAll('.attn-cell'));
+      const info = document.getElementById('attn-info');
+      if (!words.length || !cells.length) return null;
+      
+      let qIdx = 3; // Focus first on "LLM"
+      
+      function run() {
+        words.forEach((w, idx) => {
+          w.classList.toggle('query-active', idx === qIdx);
+        });
+        
+        if (info) info.textContent = `Query: "${words[qIdx].textContent}" self-attn weights`;
+        
+        cells.forEach((c, idx) => {
+          const row = Math.floor(idx / 4);
+          c.classList.remove('active-cell');
+          if (row === qIdx) {
+            c.style.transform = 'scale(1.06)';
+            c.style.filter = 'brightness(1.2)';
+            if (qIdx === 3 && (idx === 12 || idx === 14)) {
+              c.classList.add('active-cell');
+            } else if (qIdx === row && idx % 5 === 0) {
+              c.classList.add('active-cell');
+            }
+          } else {
+            c.style.transform = 'none';
+            c.style.filter = 'none';
+          }
+        });
+        
+        qIdx = (qIdx + 1) % 4;
+      }
+      run();
+      return setInterval(run, 600);
+    }
+
+    // 4. Supervised Fine-tuning (Loss Masking)
+    function animateSFT() {
+      const textEl = document.getElementById('sft-assistant-text');
+      const badge = document.querySelector('.assistant-badge');
+      if (!textEl) return null;
+      
+      const fullText = "An autoregressive transformer trained to predict the next token...";
+      let charIdx = 0;
+      textEl.textContent = "";
+      
+      function run() {
+        if (charIdx <= fullText.length) {
+          textEl.textContent = fullText.slice(0, charIdx) + "_";
+          charIdx += 3;
+          if (badge) {
+            badge.style.opacity = badge.style.opacity === "1" ? "0.6" : "1";
+          }
+        } else {
+          textEl.textContent = fullText;
+          charIdx = 0;
+        }
+      }
+      run();
+      return setInterval(run, 100);
+    }
+
+    // 5. RL Post-training (DPO Prob Shifts)
+    function animateRL() {
+      const chosenProb = document.getElementById('rl-chosen-prob');
+      const chosenBar = document.getElementById('rl-chosen-bar');
+      const rejectedProb = document.getElementById('rl-rejected-prob');
+      const rejectedBar = document.getElementById('rl-rejected-bar');
+      const chosenCand = document.getElementById('rl-cand-chosen');
+      
+      if (!chosenProb || !chosenBar || !rejectedProb || !rejectedBar || !chosenCand) return null;
+      
+      let state = 0;
+      function run() {
+        if (state === 0) {
+          chosenProb.textContent = "Prob: 50%";
+          chosenBar.style.width = "50%";
+          rejectedProb.textContent = "Prob: 50%";
+          rejectedBar.style.width = "50%";
+          chosenCand.classList.remove('glowing');
+          state = 1;
+        } else if (state === 1) {
+          chosenProb.textContent = "Prob: 88%";
+          chosenBar.style.width = "88%";
+          rejectedProb.textContent = "Prob: 12%";
+          rejectedBar.style.width = "12%";
+          chosenCand.classList.add('glowing');
+          state = 0;
+        }
+      }
+      run();
+      return setInterval(run, 1100);
+    }
+
+    // 6. Knowledge Distillation (KL Alignment)
+    function animateDistill() {
+      const s0 = document.getElementById('distill-s-0');
+      const s1 = document.getElementById('distill-s-1');
+      const s2 = document.getElementById('distill-s-2');
+      const s3 = document.getElementById('distill-s-3');
+      const loss = document.getElementById('distill-loss');
+      if (!s0 || !loss) return null;
+      
+      let state = 0;
+      function run() {
+        if (state === 0) {
+          s0.style.height = "25%";
+          s1.style.height = "85%";
+          s2.style.height = "30%";
+          s3.style.height = "75%";
+          loss.textContent = "KL Divergence Loss: 0.854";
+          loss.style.color = "var(--red)";
+          state = 1;
+        } else if (state === 1) {
+          s0.style.height = "78%";
+          s1.style.height = "48%";
+          s2.style.height = "92%";
+          s3.style.height = "18%";
+          loss.textContent = "KL Divergence Loss: 0.021 ✓";
+          loss.style.color = "var(--green)";
+          state = 0;
+        }
+      }
+      run();
+      return setInterval(run, 1200);
+    }
+
+    // 7. Inference serving (Paged Memory)
+    function animateInference() {
+      const blocks = Array.from(document.querySelectorAll('.infer-block'));
+      const mem = document.getElementById('infer-mem');
+      if (!blocks.length || !mem) return null;
+      
+      let step = 0;
+      function clearBlocks() {
+        blocks.forEach(b => {
+          b.className = "infer-block";
+          b.textContent = "";
+        });
+      }
+      
+      function run() {
+        clearBlocks();
+        if (step === 0) {
+          blocks[0].className = "infer-block block-b";
+          blocks[0].textContent = "B0";
+          blocks[1].className = "infer-block block-b";
+          blocks[1].textContent = "B1";
+          blocks[2].className = "infer-block block-v";
+          blocks[2].textContent = "B0";
+          mem.textContent = "18%";
+          step = 1;
+        } else if (step === 1) {
+          blocks[0].className = "infer-block block-b";
+          blocks[0].textContent = "B0";
+          blocks[1].className = "infer-block block-b";
+          blocks[1].textContent = "B1";
+          blocks[4].className = "infer-block block-b";
+          blocks[4].textContent = "B2";
+          
+          blocks[2].className = "infer-block block-v";
+          blocks[2].textContent = "B0";
+          blocks[6].className = "infer-block block-v";
+          blocks[6].textContent = "B1";
+          mem.textContent = "38%";
+          step = 2;
+        } else if (step === 2) {
+          blocks[0].className = "infer-block block-b";
+          blocks[0].textContent = "B0";
+          blocks[1].className = "infer-block block-b";
+          blocks[1].textContent = "B1";
+          blocks[4].className = "infer-block block-b";
+          blocks[4].textContent = "B2";
+          blocks[9].className = "infer-block block-b";
+          blocks[9].textContent = "B3";
+          
+          blocks[2].className = "infer-block block-v";
+          blocks[2].textContent = "B0";
+          blocks[6].className = "infer-block block-v";
+          blocks[6].textContent = "B1";
+          blocks[14].className = "infer-block block-v";
+          blocks[14].textContent = "B2";
+          mem.textContent = "62%";
+          step = 3;
+        } else if (step === 3) {
+          blocks[2].className = "infer-block block-v";
+          blocks[2].textContent = "B0";
+          blocks[6].className = "infer-block block-v";
+          blocks[6].textContent = "B1";
+          blocks[14].className = "infer-block block-v";
+          blocks[14].textContent = "B2";
+          mem.textContent = "18% (Freed Req 1)";
+          step = 0;
+        }
+      }
+      run();
+      return setInterval(run, 800);
+    }
+
+    function triggerStageAnimation(i) {
+      if (activeInterval) {
+        clearInterval(activeInterval);
+        activeInterval = null;
+      }
+      
+      if (i === 0) activeInterval = animateBPE();
+      else if (i === 1) activeInterval = animatePipeline();
+      else if (i === 2) activeInterval = animateAttention();
+      else if (i === 3) activeInterval = animateSFT();
+      else if (i === 4) activeInterval = animateRL();
+      else if (i === 5) activeInterval = animateDistill();
+      else if (i === 6) activeInterval = animateInference();
+    }
+
+    // --- Main Tick Controller ---
+    function tick() {
+      const isLast = idx === N - 1;
+      anodes.forEach((n, i) => n.classList.toggle('active', i === idx));
+      movePacket(idx, true);
+
+      // Update stage visualizer header + panels
+      const _stageLang = localStorage.getItem('unbox-lang') || 'en';
+      const _stageMeta = (STAGE_METADATA[_stageLang] || STAGE_METADATA.en)[idx];
+      if (visStageTag) visStageTag.textContent = _stageMeta.tag;
+      if (visStageTitle) visStageTitle.textContent = _stageMeta.title;
+      visPanels.forEach((p, i) => {
+        p.classList.toggle('active', i === idx);
+      });
+      triggerStageAnimation(idx);
+
+      const next  = isLast ? 0 : idx + 1;
+      // Slower delay so the user can easily observe animations (2.5s per stage, 3.5s on last)
+      const delay = isLast ? 3500 : 2500;
+
+      if (isLast) {
+        setTimeout(() => movePacket(0, false), delay - 80);
+      }
+
+      idx = next;
+      setTimeout(tick, delay);
+    }
+
+    // Initialise packet position instantly
+    if (packet && N) {
+      packet.style.transition = 'none';
+      packet.style.top = nodeCenter(0) + 'px';
+    }
+    
+    // Start loop
+    tick();
+  })();
+
+  // ── Neural network canvas
+  (function() {
+    const canvas = document.getElementById('hero-canvas');
+    const ctx    = canvas.getContext('2d');
+    let W, H, nodes = [], raf;
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      W = canvas.width  = rect.width;
+      H = canvas.height = rect.height;
+      initNodes();
+    }
+
+    function initNodes() {
+      nodes = [];
+      const count = Math.min(70, Math.floor(W * H / 14000));
+      for (let i = 0; i < count; i++) {
+        nodes.push({
+          x:  Math.random() * W,
+          y:  Math.random() * H,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: (Math.random() - 0.5) * 0.25,
+          r:  Math.random() * 1.4 + 0.5,
+        });
+      }
+    }
+
+    function tick() {
+      const dark = document.documentElement.dataset.theme !== 'light';
+      const rgb  = dark ? '79,142,255' : '42,110,245';
+
+      ctx.clearRect(0, 0, W, H);
+
+      nodes.forEach(n => {
+        n.x += n.vx; n.y += n.vy;
+        if (n.x < 0 || n.x > W) n.vx *= -1;
+        if (n.y < 0 || n.y > H) n.vy *= -1;
+      });
+
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const d  = Math.sqrt(dx * dx + dy * dy);
+          if (d < 140) {
+            const a = (1 - d / 140) * (dark ? 0.5 : 0.35);
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = `rgba(${rgb},${a})`;
+            ctx.lineWidth   = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+
+      nodes.forEach(n => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rgb},${dark ? 0.7 : 0.5})`;
+        ctx.fill();
+      });
+
+      raf = requestAnimationFrame(tick);
+    }
+
+    resize();
+    tick();
+    window.addEventListener('resize', resize, { passive: true });
+  })();
+</script>
+
+</body>
+</html>
