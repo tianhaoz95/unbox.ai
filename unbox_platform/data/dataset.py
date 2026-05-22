@@ -128,6 +128,11 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
     Memory-efficient streaming dataset for large corpora.
     Tokenizes documents on-the-fly without loading everything into RAM.
     Use this for production training runs; use PretrainDataset for tests.
+
+    Sharding: documents are partitioned across (world_size × num_workers) shards
+    using round-robin assignment so every GPU and DataLoader worker sees a
+    disjoint subset of the data.  Pass rank/world_size at construction time;
+    within-rank worker sharding is handled automatically via get_worker_info().
     """
 
     def __init__(
@@ -136,12 +141,27 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
         config: DataConfig,
         split: str = "train",
         skip_chunks: int = 0,
+        rank: int = 0,
+        world_size: int = 1,
     ) -> None:
         self.tokenizer = tokenizer
         self.config = config
         self.max_seq_len = config.max_seq_len
         self.split = split
         self.skip_chunks = skip_chunks
+        self.rank = rank
+        self.world_size = world_size
+        # Pre-compute n_eval once in the main process so DataLoader workers
+        # don't each re-scan the full file.
+        self._n_eval = self._compute_n_eval()
+
+    def _compute_n_eval(self) -> int:
+        path = Path(self.config.data_path)
+        if path.exists():
+            with open(path, encoding="utf-8") as f:
+                total_docs = sum(1 for l in f if l.strip())
+            return max(1, int(self.config.eval_fraction * total_docs))
+        return int(self.config.eval_fraction * 9_765_625)
 
     def _iter_texts(self) -> Iterator[str]:
         path = Path(self.config.data_path)
@@ -151,10 +171,7 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
             yield from self._iter_hf_dataset()
 
     def _iter_jsonl(self, path: Path) -> Iterator[str]:
-        with open(path, encoding="utf-8") as f:
-            total_docs = sum(1 for l in f if l.strip())
-        n_eval = max(1, int(self.config.eval_fraction * total_docs))
-
+        n_eval = self._n_eval  # pre-computed; no extra file scan needed
         with open(path, encoding="utf-8") as f:
             for i, line in enumerate(f):
                 line = line.strip()
@@ -184,7 +201,7 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
             cache_dir=self.config.cache_dir,
             trust_remote_code=False,
         )
-        n_eval = int(self.config.eval_fraction * 9_765_625)
+        n_eval = self._n_eval
 
         for i, example in enumerate(ds):
             if self.split == "eval":
@@ -198,16 +215,27 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
                 yield text
 
     def __iter__(self) -> Iterator[dict[str, torch.Tensor]]:
+        # Determine this shard's position among all (rank × worker) shards.
+        worker_info = torch.utils.data.get_worker_info()
+        worker_id = worker_info.id if worker_info is not None else 0
+        num_workers = worker_info.num_workers if worker_info is not None else 1
+
+        shard_id = self.rank * num_workers + worker_id
+        total_shards = self.world_size * num_workers
+        local_skip = self.skip_chunks // total_shards
+
         buffer: list[int] = []
         skipped = 0
-        for text in self._iter_texts():
+        for doc_idx, text in enumerate(self._iter_texts()):
+            if doc_idx % total_shards != shard_id:
+                continue
             ids = self.tokenizer.encode(text, add_special_tokens=False)
             ids = [self.tokenizer.bos_id] + ids + [self.tokenizer.eos_id]
             buffer.extend(ids)
             while len(buffer) >= self.max_seq_len:
                 chunk = buffer[: self.max_seq_len]
                 buffer = buffer[self.max_seq_len :]
-                if skipped < self.skip_chunks:
+                if skipped < local_skip:
                     skipped += 1
                     continue
                 input_ids = torch.tensor(chunk, dtype=torch.long)
@@ -216,16 +244,14 @@ class StreamingPretrainDataset(torch.utils.data.IterableDataset):
                 yield {"input_ids": input_ids, "labels": labels}
 
     def estimate_num_chunks(self) -> int:
-        """Estimate chunk count via a fast line-count pass + avg tokens/doc heuristic."""
-        path = Path(self.config.data_path)
-        if not path.exists():
-            return 10_000  # fallback for HF streaming datasets
-        with open(path, encoding="utf-8") as f:
-            total_docs = sum(1 for l in f if l.strip())
-        n_eval = max(1, int(self.config.eval_fraction * total_docs))
-        n_docs = n_eval if self.split == "eval" else total_docs - n_eval
+        """Estimate chunk count via pre-computed doc count + avg tokens/doc heuristic."""
+        if self.split == "eval":
+            n_docs = self._n_eval
+        else:
+            total_docs = int(self._n_eval / self.config.eval_fraction) if self.config.eval_fraction > 0 else self._n_eval
+            n_docs = total_docs - self._n_eval
         avg_tokens_per_doc = 500  # conservative estimate for FineWeb-Edu
-        return max(1, (n_docs * avg_tokens_per_doc) // self.max_seq_len)
+        return max(1, int(n_docs * avg_tokens_per_doc) // self.max_seq_len)
 
 
 def build_dataloader(
@@ -236,14 +262,13 @@ def build_dataloader(
     rank: int = 0,
     world_size: int = 1,
 ) -> DataLoader:
-    dataset = StreamingPretrainDataset(tokenizer, config, split=split)
-
-    # IterableDataset does not support DistributedSampler; multi-GPU sharding
-    # must be done inside __iter__ (not yet implemented).
+    dataset = StreamingPretrainDataset(
+        tokenizer, config, split=split, rank=rank, world_size=world_size
+    )
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        num_workers=0,  # multiple workers each iterate the full dataset independently
+        num_workers=config.num_workers,
         pin_memory=torch.cuda.is_available(),
         drop_last=True,
     )

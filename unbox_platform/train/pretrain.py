@@ -243,7 +243,7 @@ def main() -> None:
     eval_loader = build_dataloader(
         tokenizer, data_cfg, split="eval",
         batch_size=train_cfg.batch_size,
-        rank=rank, world_size=world_size,
+        rank=0, world_size=1,  # eval runs on rank 0 only; no sharding needed
     )
 
     start_step, start_epoch = 0, 0
