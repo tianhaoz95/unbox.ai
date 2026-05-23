@@ -61,8 +61,23 @@ def main() -> None:
     model = build_model(cfg)
     tokenizer = build_tokenizer(cfg)
 
-    dataset = load_dataset(cfg.dataset_name, split=cfg.dataset_split)
-    eval_dataset = load_dataset(cfg.dataset_name, split=cfg.eval_dataset_split)
+    local_path = Path(cfg.dataset_name)
+    if local_path.exists():
+        # Load from local parquet files (e.g. data/ultrachat_200k/data/*.parquet)
+        data_dir = local_path / "data"
+        dataset = load_dataset(
+            "parquet",
+            data_files={cfg.dataset_split: str(data_dir / f"{cfg.dataset_split}-*.parquet")},
+            split=cfg.dataset_split,
+        )
+        eval_dataset = load_dataset(
+            "parquet",
+            data_files={cfg.eval_dataset_split: str(data_dir / f"{cfg.eval_dataset_split}-*.parquet")},
+            split=cfg.eval_dataset_split,
+        )
+    else:
+        dataset = load_dataset(cfg.dataset_name, split=cfg.dataset_split)
+        eval_dataset = load_dataset(cfg.dataset_name, split=cfg.eval_dataset_split)
 
     if cfg.max_samples > 0:
         dataset = dataset.select(range(min(cfg.max_samples, len(dataset))))
