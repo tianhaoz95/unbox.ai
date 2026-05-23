@@ -1,7 +1,11 @@
 model_path: checkpoints/sft/basic/checkpoint-3000
 output_dir: checkpoints/rl/dpo
 
-dataset_name: HuggingFaceH4/ultrafeedback_binarized
+# Use local path when HuggingFace Hub is unreachable (e.g. network-restricted machines);
+# requires dataset already downloaded to data/ultrafeedback_binarized/ via huggingface-cli download
+dataset_name: data/ultrafeedback_binarized
+# Use HuggingFace Hub path when internet access is available; auto-downloads and caches
+# dataset_name: HuggingFaceH4/ultrafeedback_binarized
 train_split: train_prefs
 eval_split: test_prefs
 max_samples: -1

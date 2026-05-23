@@ -95,8 +95,22 @@ def main() -> None:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    dataset = load_dataset(cfg.dataset_name, split=cfg.train_split)
-    eval_dataset = load_dataset(cfg.dataset_name, split=cfg.eval_split)
+    local_path = Path(cfg.dataset_name)
+    if local_path.exists():
+        data_dir = local_path / "data"
+        dataset = load_dataset(
+            "parquet",
+            data_files={cfg.train_split: str(data_dir / f"{cfg.train_split}-*.parquet")},
+            split=cfg.train_split,
+        )
+        eval_dataset = load_dataset(
+            "parquet",
+            data_files={cfg.eval_split: str(data_dir / f"{cfg.eval_split}-*.parquet")},
+            split=cfg.eval_split,
+        )
+    else:
+        dataset = load_dataset(cfg.dataset_name, split=cfg.train_split)
+        eval_dataset = load_dataset(cfg.dataset_name, split=cfg.eval_split)
 
     # Drop the string "prompt" column — ultrafeedback has a string prompt that conflicts
     # with TRL's conversational processing. TRL's extract_prompt will re-derive a
