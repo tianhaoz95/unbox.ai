@@ -232,17 +232,17 @@ uv pip install -e ".[logging]"
 Platform entry points — always use `.venv/bin/python` and `.venv/bin/torchrun`:
 
 ```bash
-# Pre-training (wandb off by default; set use_wandb: true in the config to enable)
-.venv/bin/python -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
+# Pre-training — wandb stores data locally; sync to cloud after training with: wandb sync wandb/
+WANDB_MODE=offline .venv/bin/torchrun --nproc_per_node=8 -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
 
-# SFT
-.venv/bin/python -m unbox_platform.sft.train --config configs/sft/basic.yaml
+# SFT — same offline wandb pattern; torchrun handles 8-GPU DDP via HF Trainer
+WANDB_MODE=offline .venv/bin/torchrun --nproc_per_node=8 -m unbox_platform.sft.train --config configs/sft/basic.yaml
 
 # RL post-training
 .venv/bin/python -m unbox_platform.rl.train --config configs/rl/ppo.yaml
 
-# Distributed launch (torchrun)
-.venv/bin/torchrun --nproc_per_node=8 -m unbox_platform.train.pretrain --config configs/pretrain/760m.yaml
+# Upload wandb offline runs after training
+.venv/bin/wandb sync wandb/
 
 # Inference server
 .venv/bin/python -m unbox_platform.infer.server --config configs/infer/serve.yaml
@@ -310,7 +310,7 @@ cp checkpoints/pretrain/760m/tokenizer/* checkpoints/tokenizer/
 .venv/bin/modelscope download tianhaoz95/unbox-760m-sft \
     --local_dir checkpoints/sft/basic/checkpoint-3000
 # HF Trainer auto-resumes from step 3000 including mid-epoch data skip
-.venv/bin/python -m unbox_platform.sft.train --config configs/sft/basic.yaml
+WANDB_MODE=offline .venv/bin/torchrun --nproc_per_node=8 -m unbox_platform.sft.train --config configs/sft/basic.yaml
 ```
 
 Both checkpoints include optimizer and scheduler state — training resumes exactly
