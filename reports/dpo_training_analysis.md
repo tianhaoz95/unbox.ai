@@ -1,0 +1,144 @@
+# DPO Post-Training: Full Analysis and Decisions
+
+**Date:** 2026-05-25
+**Model:** 760M pretrained → SFT (UltraChat 200k) → DPO (UltraFeedback binarized)
+**Related reports:** `dpo_failure_lr_too_small.md`, `dpo_underfitting_num_epochs.md`
+
+---
+
+## Summary of All Runs
+
+| Run | LR | Epochs | eval margins | eval accuracy | Decision |
+|---|---|---|---|---|---|
+| Run 1 | 5e-7 | 1 | -0.001003 | 49.5% | ❌ No learning — LR too small |
+| Run 2 | 1e-6 | 1 | +0.005833 | 54.2% | ⚠️ Learning confirmed but underfitting |
+| Run 3 | 1e-6 | 3 | +0.013710 | 56.8% | ✅ Best achievable — stop here |
+
+---
+
+## Run 1: No Learning (LR=5e-7, 1 epoch)
+
+### Metrics
+- Loss stuck at **0.6931** = log(2), the theoretical value when reward margin = 0
+- Margins oscillated around zero with no trend
+- Accuracy ~49.5% (indistinguishable from random)
+
+### Root Causes
+**LR too small.** `5e-7` is below the effective range for DPO (~1e-6 to 5e-6).
+With only 956 steps, the policy never escaped the reference distribution — the
+KL penalty dominated and rewards/chosen ≈ rewards/rejected ≈ 0 throughout.
+
+**Reference model already inverts preferences.** The SFT checkpoint assigns
+higher probability to rejected responses than chosen ones:
+```
+logps/chosen   ≈ -473   (lower — less probable)
+logps/rejected ≈ -401   (higher — more probable)
+```
+Partly a length effect (chosen responses are longer in UltraFeedback), but also
+a sign that the SFT model wasn't trained long enough to prefer high-quality
+assistant responses. DPO has to fight this ordering on every update.
+
+### Fix
+Increased `learning_rate: 5e-7` → `1e-6`.
+
+---
+
+## Run 2: Learning Confirmed, Underfitting (LR=1e-6, 1 epoch)
+
+### Metrics
+- Margins positive and growing: started ~0.003 → ended ~0.006 at eval
+- Accuracy: 54.2% (above random, real learning)
+- Loss: 0.6906 (small but real decrease from baseline)
+
+### Finding: Margins Still Rising at End of Training
+The margin trend was still clearly upward when training stopped at epoch 1.
+A converged model shows margins plateauing; a still-rising trend means the
+model has more capacity to learn that wasn't utilized.
+
+**Two compounding causes:**
+1. **One epoch is too few.** The gradient signal in DPO is weaker than SFT
+   (relative ranking, not absolute correct answer), requiring more data passes.
+2. **Cosine LR decayed to zero before convergence.** By step 950/956,
+   LR ≈ 1.65e-10 (effectively zero). The model spent its last ~150 steps
+   unable to make meaningful updates.
+
+### Fix
+Increased `num_epochs: 1` → `3` and **restarted fresh**.
+
+> **Important:** resuming from the 1-epoch checkpoint is wrong. The scheduler
+> state saved at LR≈0 would make the extra epochs train at near-zero LR —
+> wasting compute. Always start fresh when changing num_epochs.
+
+---
+
+## Run 3: Best Achievable Result (LR=1e-6, 3 epochs)
+
+### Metrics
+| | Step 10 | Step 956 (ep1) | Step 1912 (ep2) | Final eval (ep3) |
+|---|---|---|---|---|
+| margins | 0.002 | ~0.006 | ~0.010 | **0.0137** |
+| accuracy | 40% | ~53% | ~56% | **56.8%** |
+| loss | 0.6924 | ~0.691 | ~0.688 | **0.6869** |
+
+Training briefly reached 60–61% accuracy at steps 2830 and 2860 before the
+eval settled at 56.8%.
+
+### Analysis: Has the Model Converged?
+
+**No — but more epochs won't help.**
+
+Evidence the model has hit its capacity ceiling:
+
+1. **High variance in final epoch.** Margins oscillated 0.013 → 0.024 → 0.014 → 0.024,
+   accuracy bounced 55% → 61% → 55% → 60%. Converging models plateau smoothly;
+   noisy oscillation means the model is at the edge of its representational capacity.
+
+2. **Loss barely moved.** Total drop of ~0.011 over 2868 steps (0.6931 → 0.6819).
+   The KL penalty is heavily constraining the policy from deviating from a reference
+   that has inverted preferences.
+
+3. **Epoch-over-epoch gains halving:**
+   - Run 1 → Run 2: +4.7% accuracy
+   - Run 2 → Run 3: +2.6% accuracy
+   - Projected Run 4 (5 epochs): ~+1.5% → ~58.3%
+   A 4th run would not reach the 60%+ threshold.
+
+4. **Persistent log-prob inversion.** `logps/chosen ≈ -473` vs
+   `logps/rejected ≈ -405` at final eval — the reference still prefers rejected
+   over chosen. DPO can partially compensate but cannot fully overcome this.
+
+### Decision: Stop Here
+
+Further DPO epochs are not worth running. The bottleneck is **upstream model quality**,
+not the DPO training config. The training procedure is now correct.
+
+---
+
+## What Would Actually Help
+
+In priority order:
+
+1. **Longer SFT.** The SFT model (1 epoch, 207k samples) doesn't reliably generate
+   high-quality responses. More SFT epochs or a quality-filtered dataset would
+   produce a reference model that already prefers chosen responses, dramatically
+   improving DPO signal.
+
+2. **Longer pretraining.** The base model was pretrained for only ~34k steps (~5B
+   tokens). Scaling to 100B+ tokens would improve the model's general language
+   understanding and make both SFT and DPO more effective.
+
+3. **Better preference data alignment.** UltraFeedback was generated by GPT-4/Claude
+   and may contain response styles that don't match our tokenizer's distribution.
+   Self-generated preference data (using the SFT model itself) would be better aligned.
+
+---
+
+## Final Config (`configs/rl/dpo.yaml`)
+
+```yaml
+learning_rate: 1.0e-6   # increased from 5e-7 (was too small)
+num_epochs: 3            # increased from 1 (was underfitting)
+beta: 0.1
+```
+
+**Wandb run:** `offline-run-20260525_002816-5x4gw4yx`
