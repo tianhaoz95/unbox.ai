@@ -44,9 +44,10 @@ def build_model(cfg: SFTTrainConfig) -> UnboxForCausalLM:
 
 def build_tokenizer(cfg: SFTTrainConfig) -> PreTrainedTokenizerFast:
     tokenizer = PreTrainedTokenizerFast.from_pretrained(cfg.tokenizer_path)
-    # SFTTrainer needs pad_token set
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    if cfg.chat_template_path:
+        tokenizer.chat_template = Path(cfg.chat_template_path).read_text()
     return tokenizer
 
 
@@ -120,9 +121,9 @@ def main() -> None:
         packing=cfg.packing,
         dataloader_num_workers=4,
         # Mask user turns so loss is computed only on assistant response tokens.
-        # Without this, TRL defaults to False for "messages"-only datasets, causing
-        # the model to learn to predict user turns and generate fake user messages.
-        completion_only_loss=True,
+        # Must use assistant_only_loss (not completion_only_loss) for messages-format
+        # datasets. Requires {% generation %} markers in the chat template.
+        assistant_only_loss=True,
     )
 
     trainer = SFTTrainer(

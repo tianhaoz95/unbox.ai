@@ -36,3 +36,4 @@ wandb_project: unbox-ai-sft
 wandb_run_name: ""
 
 packing: false
+chat_template_path: configs/tokenizer/chat_template.jinja

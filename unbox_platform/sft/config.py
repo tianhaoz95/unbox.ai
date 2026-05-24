@@ -44,3 +44,4 @@ class SFTTrainConfig:
 
     # SFTTrainer-specific
     packing: bool = False
+    chat_template_path: str = ""  # path to .jinja file; if set, overrides tokenizer's default template
