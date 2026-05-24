@@ -75,6 +75,19 @@ learning_rate: 5.0e-7
 learning_rate: 1.0e-6
 ```
 
+### Results After Fix (`wandb/offline-run-20260524_131814-lh86x5vd`)
+
+| Metric | LR=5e-7 (failed) | LR=1e-6 (fixed) |
+|---|---|---|
+| Final eval margins | -0.001003 | **+0.005833** |
+| Final eval accuracy | 49.5% (random) | **54.2%** |
+| Final eval loss | 0.694 | **0.6906** |
+| Margins trend | oscillating near 0 | consistently positive |
+
+The fix produced real learning: margins are positive and growing, accuracy moved
+above random. Results are still modest (54% vs ideal 60–70%+) due to the
+undertrained base model, but the directional signal is correct.
+
 ---
 
 ## Longer-Term Recommendations
