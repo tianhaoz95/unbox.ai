@@ -19,7 +19,7 @@ max_length: 2048
 num_epochs: 1
 batch_size: 2
 grad_accumulation_steps: 4
-learning_rate: 5.0e-7
+learning_rate: 1.0e-6  # increased from 5e-7 which was too small (loss stuck at log(2), ~0% margin)
 warmup_steps: 100
 weight_decay: 0.01
 beta1: 0.9
