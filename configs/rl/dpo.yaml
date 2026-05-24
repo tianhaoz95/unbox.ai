@@ -16,7 +16,7 @@ loss_type: sigmoid
 max_length: 2048
 
 # Training
-num_epochs: 1
+num_epochs: 3
 batch_size: 2
 grad_accumulation_steps: 4
 learning_rate: 1.0e-6  # increased from 5e-7 which was too small (loss stuck at log(2), ~0% margin)
