@@ -1,4 +1,4 @@
-model_path: checkpoints/sft/basic/checkpoint-3000
+model_path: checkpoints/sft/basic  # use final SFT model (not a mid-run checkpoint)
 output_dir: checkpoints/rl/dpo
 
 # Use local path when HuggingFace Hub is unreachable (e.g. network-restricted machines);
