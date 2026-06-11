@@ -18,3 +18,4 @@ checkpoints/
 wandb/
 site/
 .firebase/
+.DS_Store
